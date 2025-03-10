@@ -527,18 +527,16 @@
     driveway.receiveShadow = true;
     blockGroup.add(driveway);
 
-    // Add front grass patch - between porch and sidewalk
+    // Add front grass patch - simple flat rectangle in front of porch
+    const grassWidth = baseWidth;  // Same width as house
+    const grassLength = 4;         // Distance from porch to sidewalk
     const grassPatch = new THREE.Mesh(
-        new THREE.PlaneGeometry(4, baseWidth), // Swapped dimensions since house is rotated
+        new THREE.PlaneGeometry(grassWidth, grassLength),
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
-    grassPatch.rotation.x = -Math.PI / 2; // Flat on ground
-    grassPatch.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2; // Match house rotation
-
-    // Position grass correctly between porch and sidewalk
-    const grassX = x;
-    const grassZ = isLeftSide ? z + baseLength/2 + 2 : z - baseLength/2 - 2;
-    grassPatch.position.set(grassX, -0.02, grassZ);
+    grassPatch.rotation.x = -Math.PI / 2;  // Flat on ground like sidewalk
+    // Position in front of porch
+    grassPatch.position.set(x, -0.02, z + (isLeftSide ? baseLength/2 + 2 : -baseLength/2 - 2));
     grassPatch.receiveShadow = true;
     blockGroup.add(grassPatch);
     
