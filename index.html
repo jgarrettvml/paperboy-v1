@@ -512,64 +512,73 @@
     blockGroup.add(houseGroup);
 
     // Add driveway from garage to street
-    const drivewayLength = 8;  // Length from house to street
-    const drivewayWidth = 3;   // Standard driveway width
+    const drivewayLength = 8;
+    const drivewayWidth = 3;
     const driveway = new THREE.Mesh(
         new THREE.PlaneGeometry(drivewayWidth, drivewayLength),
         new THREE.MeshLambertMaterial({ color: 0x999999 })
     );
     driveway.rotation.x = -Math.PI / 2;
     
-    // Position driveway to start at garage and extend to street
     const driveX = isLeftSide ? 
-        x + baseWidth/2 : // Left houses - driveway starts at right edge
-        x - baseWidth/2;  // Right houses - driveway starts at left edge
-    driveway.position.set(driveX, -0.01, z + drivewayLength/2 - 2);
+        x + baseWidth/2 : 
+        x - baseWidth/2;
+    driveway.position.set(driveX, -0.01, z);
     driveway.receiveShadow = true;
     blockGroup.add(driveway);
 
-    // Add grass - flat rectangle between porch and sidewalk
-    const grassWidth = 4;  // Width from porch to sidewalk
-    const grassLength = width;  // Length matches house width
-    const grass = new THREE.Mesh(
-        new THREE.PlaneGeometry(grassWidth, grassLength),
+    // Add front grass patch
+    const grassPatch = new THREE.Mesh(
+        new THREE.PlaneGeometry(baseWidth, 4),
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
-    grass.rotation.x = -Math.PI / 2;  // Make it flat
+    grassPatch.rotation.x = -Math.PI / 2;
+
+    // Position grass in front of porch
+    const grassX = x;
+    const grassZ = isLeftSide ? z + baseLength/2 + 2 : z - baseLength/2 - 2;
+    grassPatch.position.set(grassX, -0.02, grassZ);
+    grassPatch.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
+    grassPatch.receiveShadow = true;
+    blockGroup.add(grassPatch);
     
-    // Position grass correctly between porch and sidewalk
-    if (isLeftSide) {
-        grass.position.set(x + length/2 + 2, -0.02, z);
-    } else {
-        grass.position.set(x - length/2 - 2, -0.02, z);
-    }
-    grass.receiveShadow = true;
-    blockGroup.add(grass);
-    
-    // Add mailbox at street edge next to driveway
-    const mailboxX = driveX;  // Align with driveway
-    const mailboxZ = z + 3;   // Near street
+    // Add mailbox at street edge
+    const mailboxOffset = 3;
+    const mailboxX = driveX;
+    const mailboxZ = isLeftSide ? z + mailboxOffset : z - mailboxOffset;
     createMailbox(blockGroup, mailboxX, mailboxZ);
     
-    // Add collision mesh
+    // Add collision meshes for house and porch
     const wallCollision = new THREE.Mesh(
         new THREE.BoxGeometry(baseWidth, 3, 0.5),
-        new THREE.MeshLambertMaterial({ visible: false })
+        new THREE.MeshBasicMaterial({ visible: false })
     );
-    wallCollision.position.set(x + (isLeftSide ? length/2 : -length/2), 1.5, z);
+    wallCollision.position.set(
+        x + (isLeftSide ? baseLength/2 : -baseLength/2),
+        1.5,
+        z
+    );
     wallCollision.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
     wallCollision.userData.type = 'wall';
     blockGroup.add(wallCollision);
     
     // Register porch for delivery
+    const porchPos = new THREE.Vector3(
+        x,
+        0.2,
+        isLeftSide ? z + baseLength/2 + 1 : z - baseLength/2 - 1
+    );
     porches.push({
-        position: new THREE.Vector3(
-            x + (isLeftSide ? length/2 : -length/2),
-            0.2,
-            z + blockGroup.position.z
-        ),
+        position: porchPos,
         width: baseWidth,
         length: 3
+    });
+    
+    // Register mailbox for collision
+    mailboxes.push({
+        position: new THREE.Vector3(mailboxX, 0, mailboxZ + blockGroup.position.z),
+        width: 1,
+        length: 1
     });
 }
 
