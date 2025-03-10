@@ -1194,41 +1194,6 @@
             });
         }
 
-        // Create a hill
-        function createHill(blockGroup, x, z) {
-            const hillWidth = 10;
-            const hillHeight = 2;
-            
-            // Create hill geometry
-            const hillGeometry = new THREE.CylinderGeometry(
-                0, 
-                hillWidth / 2, 
-                hillHeight, 
-                16, 
-                1, 
-                false
-            );
-            hillGeometry.rotateX(Math.PI / 2);
-            
-            const hill = new THREE.Mesh(
-                hillGeometry,
-                new THREE.MeshLambertMaterial({ color: COLORS.HILL })
-            );
-            hill.position.set(x, hillHeight / 2, z);
-            hill.castShadow = true;
-            hill.receiveShadow = true;
-            blockGroup.add(hill);
-            
-            // Register hill for collision and jumping
-            obstacles.push({
-                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
-                width: hillWidth,
-                height: hillHeight,
-                depth: hillWidth,
-                type: 'hill'
-            });
-        }
-
         // Create a tree
         function createTree(blockGroup, x, z) {
             const treeGroup = new THREE.Group();
