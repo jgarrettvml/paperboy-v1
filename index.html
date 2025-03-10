@@ -582,17 +582,17 @@
 
         // Create a block with houses
         function createHousesBlock(blockGroup) {
-    // Create base grass plane for entire block - extended to cover more area
+    // Create base grass plane
     const grassBase = new THREE.Mesh(
-        new THREE.PlaneGeometry(blockWidth * 2 + streetWidth * 4, blockLength), // Much wider to cover both sides
+        new THREE.PlaneGeometry(blockWidth + streetWidth * 4, blockLength),
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
     grassBase.rotation.x = -Math.PI / 2;
-    grassBase.position.set(0, -0.02, blockLength / 2);
+    grassBase.position.set(-(blockWidth/4), -0.02, blockLength / 2); // Shifted to cover correct area
     grassBase.receiveShadow = true;
     blockGroup.add(grassBase);
     
-    // Create street on top of grass
+    // Create street - this is where cars and player go
     const street = new THREE.Mesh(
         new THREE.PlaneGeometry(blockWidth + streetWidth * 2, blockLength),
         new THREE.MeshLambertMaterial({ color: COLORS.STREET })
@@ -602,7 +602,7 @@
     street.receiveShadow = true;
     blockGroup.add(street);
     
-    // Create sidewalks on top of grass
+    // Create sidewalk
     const leftSidewalk = new THREE.Mesh(
         new THREE.PlaneGeometry(3, blockLength),
         new THREE.MeshLambertMaterial({ color: COLORS.SIDEWALK })
