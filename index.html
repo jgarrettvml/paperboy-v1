@@ -1194,42 +1194,6 @@
             });
         }
 
-        // Create a tree
-        function createTree(blockGroup, x, z) {
-            const treeGroup = new THREE.Group();
-            
-            // Trunk
-            const trunk = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.2, 0.3, 2, 8),
-                new THREE.MeshLambertMaterial({ color: 0x8B4513 })
-            );
-            trunk.position.y = 1;
-            trunk.castShadow = true;
-            treeGroup.add(trunk);
-            
-            // Leaves
-            const leaves = new THREE.Mesh(
-                new THREE.ConeGeometry(1.5, 3, 8),
-                new THREE.MeshLambertMaterial({ color: 0x228822 })
-            );
-            leaves.position.y = 3;
-            leaves.castShadow = true;
-            treeGroup.add(leaves);
-            
-            // Add to block
-            treeGroup.position.set(x, 0, z);
-            blockGroup.add(treeGroup);
-            
-            // Register for collision
-            obstacles.push({
-                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
-                width: 1,
-                height: 4,
-                depth: 1,
-                type: 'tree'
-            });
-        }
-
         // Add obstacles to a block
         function addObstacles(blockGroup) {
             // Add cars
