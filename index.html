@@ -462,15 +462,16 @@
         function createHouse(blockGroup, x, z, width, length, mailboxOnLeft) {
             const houseGroup = new THREE.Group();
             const setback = 4;
-            
-            // Create collision box for front of house
-            const frontCollision = new THREE.Mesh(
-                new THREE.BoxGeometry(width, 3, 0.5),  // Thin but tall collision plane
-                new THREE.MeshBasicMaterial({ visible: false })  // Invisible but collidable
+
+            // Driveway
+            const driveway = new THREE.Mesh(
+                new THREE.PlaneGeometry(3, setback),
+                new THREE.MeshLambertMaterial({ color: 0x999999 })
             );
-            frontCollision.position.set(0, 1.5, -setback + length/2);
-            frontCollision.userData.type = 'house';
-            houseGroup.add(frontCollision);
+            driveway.rotation.x = -Math.PI / 2;
+            driveway.position.set(0, 0.01, -length/2 - setback/2);
+            driveway.receiveShadow = true;
+            houseGroup.add(driveway);
 
             // House base
             const base = new THREE.Mesh(
@@ -480,34 +481,59 @@
             base.position.set(0, 1, -setback);
             base.castShadow = true;
             houseGroup.add(base);
-            
-            // Add roof, other house parts...
-            // [Previous house code remains the same]
 
-            // Porch with collision
-            const porchCollision = new THREE.Mesh(
-                new THREE.BoxGeometry(3, 0.5, 2),
+            // Front wall collision
+            const frontCollision = new THREE.Mesh(
+                new THREE.BoxGeometry(width, 3, 0.5),
                 new THREE.MeshBasicMaterial({ visible: false })
             );
-            porchCollision.position.set(0, 0.25, -setback + length/2 + 1);
-            porchCollision.userData.type = 'porch';
-            houseGroup.add(porchCollision);
-
-            // Visual porch (unchanged)
+            frontCollision.position.set(0, 1.5, -setback + length/2);
+            frontCollision.userData.type = 'wall';
+            houseGroup.add(frontCollision);
+            
+            // Roof
+            const roof = new THREE.Mesh(
+                new THREE.ConeGeometry(width * 0.7, 1.5, 4),
+                new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF })
+            );
+            roof.position.set(0, 2.75, -setback);
+            roof.rotation.y = Math.PI / 4;
+            roof.castShadow = true;
+            houseGroup.add(roof);
+            
+            // Porch
             const porch = new THREE.Mesh(
                 new THREE.BoxGeometry(3, 0.2, 2),
                 new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
             );
             porch.position.set(0, 0.1, -setback + length/2 + 1);
             porch.receiveShadow = true;
+            porch.userData.type = 'porch';
             houseGroup.add(porch);
 
-            // Add mailbox with proper collision
-            const mailboxX = mailboxOnLeft ? -width/2 - 1 : width/2 + 1;
-            createMailbox(blockGroup, x + mailboxX, z);
+            // Porch steps
+            const steps = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 0.4, 0.8),
+                new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
+            );
+            steps.position.set(0, 0.2, -setback + length/2 + 2);
+            steps.receiveShadow = true;
+            houseGroup.add(steps);
             
+            // Add mailbox - always on the front corner of the lawn
+            const mailboxX = mailboxOnLeft ? -width/2 - 1 : width/2 + 1;
+            createMailbox(blockGroup, x + mailboxX, z + length/2);  // Positioned at front of house
+            
+            // Add house to block
             houseGroup.position.set(x, 0, z);
             blockGroup.add(houseGroup);
+            
+            // Add porch to deliverable locations
+            porches.push({
+                position: new THREE.Vector3(x, 0.2, z - setback + length/2 + 1 + blockGroup.position.z),
+                width: 3,
+                length: 2
+            });
         }
 
         // Create a block with houses
@@ -1589,71 +1615,80 @@
 
         // Update newspapers with improved collision detection
         function updateNewspapers(delta) {
-        for (let i = newspapers.length - 1; i >= 0; i--) {
-            const newspaper = newspapers[i];
-            
-            if (newspaper.thrown && !newspaper.delivered) {
-                // Store current position
-                const oldPosition = newspaper.position.clone();
+            for (let i = newspapers.length - 1; i >= 0; i--) {
+                const newspaper = newspapers[i];
                 
-                // Apply simple gravity
-                newspaper.velocity.y -= 0.01;
-                
-                // Update position
-                const newPosition = newspaper.position.clone();
-                newPosition.x += newspaper.velocity.x;
-                newPosition.y += newspaper.velocity.y;
-                newPosition.z += newspaper.velocity.z;
-                
-                // Cast a ray from current position to next position
-                newspaper.raycaster.set(oldPosition, newPosition.clone().sub(oldPosition).normalize());
-                
-                // Get all intersecting objects along the path
-                const intersects = newspaper.raycaster.intersectObjects(scene.children, true);
-                
-                if (intersects.length > 0) {
-                    const hit = intersects[0];
-                    // Stop at the intersection point
-                    newspaper.position.copy(hit.point);
-                    newspaper.thrown = false;
+                if (newspaper.thrown && !newspaper.delivered) {
+                    // Apply gravity
+                    newspaper.velocity.y -= 0.015;
                     
-                    // Check what was hit
-                    let parent = hit.object;
-                    while (parent.parent && !parent.userData.type) {
-                        parent = parent.parent;
+                    // Store previous position
+                    const prevPos = newspaper.position.clone();
+                    
+                    // Update position
+                    newspaper.position.x += newspaper.velocity.x;
+                    newspaper.position.y += newspaper.velocity.y;
+                    newspaper.position.z += newspaper.velocity.z;
+                    
+                    // Check wall collisions
+                    const walls = scene.children.filter(obj => 
+                        obj.userData && obj.userData.type === 'wall');
+                    for (const wall of walls) {
+                        const bbox = new THREE.Box3().setFromObject(wall);
+                        if (bbox.containsPoint(newspaper.position)) {
+                            newspaper.thrown = false;
+                            newspaper.position.copy(prevPos);
+                            break;
+                        }
+                    }
+
+                    // Check mailbox deliveries
+                    for (const mailbox of mailboxes) {
+                        const dx = Math.abs(newspaper.position.x - mailbox.position.x);
+                        const dz = Math.abs(newspaper.position.z - mailbox.position.z);
+                        const dy = Math.abs(newspaper.position.y - 1.2);
+                        
+                        if (dx < 0.5 && dz < 0.5 && dy < 0.5) {
+                            newspaper.thrown = false;
+                            newspaper.delivered = true;
+                            score += 20;
+                            updateUI();
+                            break;
+                        }
                     }
                     
-                    if (parent.userData.type === 'mailbox') {
-                        newspaper.delivered = true;
-                        score += 20;
-                        updateUI();
-                    } else if (parent.userData.type === 'porch') {
-                        newspaper.delivered = true;
-                        score += 10;
-                        updateUI();
+                    // Check porch deliveries
+                    for (const porch of porches) {
+                        const dx = Math.abs(newspaper.position.x - porch.position.x);
+                        const dz = Math.abs(newspaper.position.z - porch.position.z);
+                        
+                        if (dx < porch.width/2 && dz < porch.length/2 && 
+                            newspaper.position.y < 0.5) {
+                            newspaper.thrown = false;
+                            newspaper.delivered = true;
+                            score += 10;
+                            updateUI();
+                            break;
+                        }
                     }
-                } else {
-                    // No collision, update position
-                    newspaper.position.copy(newPosition);
                     
                     // Ground collision
                     if (newspaper.position.y <= 0.05) {
                         newspaper.position.y = 0.05;
                         newspaper.thrown = false;
                     }
+                    
+                    // Update visual position
+                    newspaper.object.position.copy(newspaper.position);
                 }
                 
-                // Update visual position
-                newspaper.object.position.copy(newspaper.position);
-            }
-            
-            // Remove old undelivered papers
-            if (!newspaper.thrown && !newspaper.delivered && gameTime > 30) {
-                scene.remove(newspaper.object);
-                newspapers.splice(i, 1);
+                // Remove old undelivered papers
+                if (!newspaper.thrown && !newspaper.delivered && gameTime > 30) {
+                    scene.remove(newspaper.object);
+                    newspapers.splice(i, 1);
+                }
             }
         }
-    }
 
         // Animation loop
         function animate() {
