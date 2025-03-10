@@ -528,20 +528,20 @@
     driveway.receiveShadow = true;
     blockGroup.add(driveway);
 
-    // Add grass - simple rectangle between porch and sidewalk
+    // Add grass - flat rectangle between porch and sidewalk
+    const grassWidth = 4;  // Width from porch to sidewalk
+    const grassLength = width;  // Length matches house width
     const grass = new THREE.Mesh(
-        new THREE.PlaneGeometry(width, 4), // Same width as house, extends to sidewalk
+        new THREE.PlaneGeometry(grassWidth, grassLength),
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
-    grass.rotation.x = -Math.PI / 2;
-
-    // Position grass in front of porch, extending to sidewalk
+    grass.rotation.x = -Math.PI / 2;  // Make it flat
+    
+    // Position grass correctly between porch and sidewalk
     if (isLeftSide) {
-        grass.position.set(x, -0.02, z + length/2 + 2);
-        grass.rotation.y = Math.PI/2;
+        grass.position.set(x + length/2 + 2, -0.02, z);
     } else {
-        grass.position.set(x, -0.02, z - length/2 - 2);
-        grass.rotation.y = -Math.PI/2;
+        grass.position.set(x - length/2 - 2, -0.02, z);
     }
     grass.receiveShadow = true;
     blockGroup.add(grass);
@@ -554,7 +554,7 @@
     // Add collision mesh
     const wallCollision = new THREE.Mesh(
         new THREE.BoxGeometry(baseWidth, 3, 0.5),
-        new THREE.MeshBasicMaterial({ visible: false })
+        new THREE.MeshLambertMaterial({ visible: false })
     );
     wallCollision.position.set(x + (isLeftSide ? length/2 : -length/2), 1.5, z);
     wallCollision.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
