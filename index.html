@@ -465,19 +465,34 @@
     // Base house dimensions
     const baseWidth = width;
     const baseLength = length - 3;
+
+    // Choose house color to match mailbox colors
+    const houseStyle = Math.floor(Math.random() * 3);
+    let houseColor;
+    switch(houseStyle) {
+        case 0: // Classic red
+            houseColor = 0xCC0000;
+            break;
+        case 1: // Black
+            houseColor = 0x222222;
+            break;
+        case 2: // Blue
+            houseColor = 0x0033AA;
+            break;
+    }
     
-    // House base
+    // House base with selected color
     const base = new THREE.Mesh(
         new THREE.BoxGeometry(baseWidth, 2, baseLength),
-        new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_WALL })
+        new THREE.MeshLambertMaterial({ color: houseColor })
     );
     base.position.set(0, 1, -1.5);
     base.castShadow = true;
     
-    // Roof
+    // Roof - keeping black
     const roof = new THREE.Mesh(
         new THREE.ConeGeometry(baseWidth * 0.7, 1.5, 4),
-        new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF })
+        new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF }) // Keep black
     );
     roof.position.set(0, 2.75, -1.5);
     roof.rotation.y = Math.PI / 4;
@@ -511,40 +526,26 @@
     houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
     blockGroup.add(houseGroup);
 
-    // Add driveway from garage to street
-    const drivewayLength = 8;
-    const drivewayWidth = 3;
+    // Add driveway strip from between houses to sidewalk
+    const driveWidth = 4;  // Width of gap between houses
+    const driveLength = 15;  // Length to reach sidewalk
+    
     const driveway = new THREE.Mesh(
-        new THREE.PlaneGeometry(drivewayWidth, drivewayLength),
+        new THREE.PlaneGeometry(driveWidth, driveLength),
         new THREE.MeshLambertMaterial({ color: 0x999999 })
     );
-    driveway.rotation.x = -Math.PI / 2;
+    driveway.rotation.x = -Math.PI / 2;  // Keep flat like sidewalk
     
-    const driveX = isLeftSide ? 
-        x + baseWidth/2 : 
-        x - baseWidth/2;
-    driveway.position.set(driveX, -0.01, z);
+    // Position from between houses to sidewalk
+    const driveZ = z + (isLeftSide ? driveLength/2 : -driveLength/2);
+    driveway.position.set(x, 0.01, driveZ);
     driveway.receiveShadow = true;
     blockGroup.add(driveway);
-
-    // Add front grass patch - simple flat rectangle in front of porch
-    const grassWidth = baseWidth;  // Same width as house
-    const grassLength = 4;         // Distance from porch to sidewalk
-    const grassPatch = new THREE.Mesh(
-        new THREE.PlaneGeometry(grassWidth, grassLength),
-        new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
-    );
-    grassPatch.rotation.x = -Math.PI / 2;  // Flat on ground like sidewalk
-    // Position in front of porch
-    grassPatch.position.set(x, -0.02, z + (isLeftSide ? baseLength/2 + 2 : -baseLength/2 - 2));
-    grassPatch.receiveShadow = true;
-    blockGroup.add(grassPatch);
     
-    // Add mailbox at street edge
-    const mailboxOffset = 3;
-    const mailboxX = driveX;
-    const mailboxZ = isLeftSide ? z + mailboxOffset : z - mailboxOffset;
-    createMailbox(blockGroup, mailboxX, mailboxZ);
+    // Add mailbox at side of porch with matching color
+    const mailboxX = isLeftSide ? x + baseWidth/2 : x - baseWidth/2;
+    const mailboxZ = z + (isLeftSide ? baseLength/2 : -baseLength/2);
+    createMailbox(blockGroup, mailboxX, mailboxZ, houseStyle); // Pass the style to match house color
     
     // Add collision meshes for house and porch
     const wallCollision = new THREE.Mesh(
@@ -654,180 +655,181 @@
     addObstacles(blockGroup);
 }
 
+
         // Create a mailbox with more detail
-        function createMailbox(blockGroup, x, z) {
-            const mailboxGroup = new THREE.Group();
-            
-            // Create collision box for mailbox
-            const mailboxCollision = new THREE.Mesh(
-                new THREE.BoxGeometry(1, 1, 1),  // Larger collision box
-                new THREE.MeshBasicMaterial({ visible: false })
+        function createMailbox(blockGroup, x, z, style) {
+    const mailboxGroup = new THREE.Group();
+    
+    // Create collision box for mailbox
+    const mailboxCollision = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),  // Larger collision box
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    mailboxCollision.position.set(0, 1.2, 0);
+    mailboxCollision.userData.type = 'mailbox';
+    mailboxGroup.add(mailboxCollision);
+    
+    // Use passed style or random if not provided
+    const mailboxStyle = style !== undefined ? style : Math.floor(Math.random() * 3);
+    let mailboxColor;
+    
+    switch(mailboxStyle) {
+        case 0: // Classic red
+            mailboxColor = 0xCC0000;
+            break;
+        case 1: // Black
+            mailboxColor = 0x222222;
+            break;
+        case 2: // Blue
+            mailboxColor = 0x0033AA;
+            break;
+    }
+    
+    // Post
+    const postMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    
+    if (mailboxStyle === 0) { // Wooden post
+        const post = new THREE.Mesh(
+            new THREE.BoxGeometry(0.2, 1.2, 0.2),
+            postMaterial
+        );
+        post.position.y = 0.6;
+        post.castShadow = true;
+        mailboxGroup.add(post);
+    } else if (mailboxStyle === 1) { // Metal pole
+        const post = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8),
+            new THREE.MeshLambertMaterial({ color: 0x888888 })
+        );
+        post.position.y = 0.6;
+        post.castShadow = true;
+        mailboxGroup.add(post);
+        
+        // Base
+        const base = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.1, 0.1, 8),
+            new THREE.MeshLambertMaterial({ color: 0x666666 })
+        );
+        base.position.y = 0.05;
+        base.castShadow = true;
+        mailboxGroup.add(base);
+    } else { // Stone base
+        const post = new THREE.Mesh(
+            new THREE.BoxGeometry(0.3, 0.9, 0.3),
+            new THREE.MeshLambertMaterial({ color: 0x999999 })
+        );
+        post.position.y = 0.45;
+        post.castShadow = true;
+        mailboxGroup.add(post);
+        
+        // Stone texture
+        for (let i = 0; i < 5; i++) {
+            const stone = new THREE.Mesh(
+                new THREE.BoxGeometry(0.05 + Math.random() * 0.1, 0.05 + Math.random() * 0.1, 0.05),
+                new THREE.MeshLambertMaterial({ color: 0x888888 })
             );
-            mailboxCollision.position.set(0, 1.2, 0);
-            mailboxCollision.userData.type = 'mailbox';
-            mailboxGroup.add(mailboxCollision);
-            
-            // Random mailbox style (0, 1, or 2)
-            const mailboxStyle = Math.floor(Math.random() * 3);
-            let mailboxColor;
-            
-            switch(mailboxStyle) {
-                case 0: // Classic red
-                    mailboxColor = 0xCC0000;
-                    break;
-                case 1: // Black
-                    mailboxColor = 0x222222;
-                    break;
-                case 2: // Blue
-                    mailboxColor = 0x0033AA;
-                    break;
-            }
-            
-            // Post
-            const postMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-            
-            if (mailboxStyle === 0) { // Wooden post
-                const post = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.2, 1.2, 0.2),
-                    postMaterial
-                );
-                post.position.y = 0.6;
-                post.castShadow = true;
-                mailboxGroup.add(post);
-            } else if (mailboxStyle === 1) { // Metal pole
-                const post = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8),
-                    new THREE.MeshLambertMaterial({ color: 0x888888 })
-                );
-                post.position.y = 0.6;
-                post.castShadow = true;
-                mailboxGroup.add(post);
-                
-                // Base
-                const base = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.1, 0.1, 0.1, 8),
-                    new THREE.MeshLambertMaterial({ color: 0x666666 })
-                );
-                base.position.y = 0.05;
-                base.castShadow = true;
-                mailboxGroup.add(base);
-            } else { // Stone base
-                const post = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.3, 0.9, 0.3),
-                    new THREE.MeshLambertMaterial({ color: 0x999999 })
-                );
-                post.position.y = 0.45;
-                post.castShadow = true;
-                mailboxGroup.add(post);
-                
-                // Stone texture
-                for (let i = 0; i < 5; i++) {
-                    const stone = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.05 + Math.random() * 0.1, 0.05 + Math.random() * 0.1, 0.05),
-                        new THREE.MeshLambertMaterial({ color: 0x888888 })
-                    );
-                    stone.position.set(
-                        (Math.random() - 0.5) * 0.2,
-                        Math.random() * 0.8,
-                        0.17
-                    );
-                    post.add(stone);
-                }
-            }
-            
-            // Box style based on mailbox type
-            let boxGeometry;
-            if (mailboxStyle === 0) { // Classic curved top
-                boxGeometry = new THREE.BoxGeometry(0.8, 0.5, 0.4);
-                
-                // Curved top
-                const topCurve = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.2, 0.2, 0.8, 16, 1, false, 0, Math.PI),
-                    new THREE.MeshLambertMaterial({ color: mailboxColor })
-                );
-                topCurve.rotation.z = Math.PI / 2;
-                topCurve.position.set(0, 0.25, 0);
-                
-                const box = new THREE.Mesh(
-                    boxGeometry,
-                    new THREE.MeshLambertMaterial({ color: mailboxColor })
-                );
-                
-                const boxWrapper = new THREE.Group();
-                boxWrapper.add(box);
-                boxWrapper.add(topCurve);
-                boxWrapper.position.y = 1.2;
-                boxWrapper.castShadow = true;
-                mailboxGroup.add(boxWrapper);
-                
-                // Flag
-                const flag = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.05, 0.3, 0.2),
-                    new THREE.MeshLambertMaterial({ color: 0xFF0000 })
-                );
-                flag.position.set(0.425, 1.3, 0);
-                flag.castShadow = true;
-                mailboxGroup.add(flag);
-                
-            } else if (mailboxStyle === 1) { // Modern box with slot
-                boxGeometry = new THREE.BoxGeometry(0.8, 0.7, 0.4);
-                
-                const box = new THREE.Mesh(
-                    boxGeometry,
-                    new THREE.MeshLambertMaterial({ color: mailboxColor })
-                );
-                box.position.y = 1.2;
-                box.castShadow = true;
-                mailboxGroup.add(box);
-                
-                // Mail slot
-                const slot = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.6, 0.08, 0.05),
-                    new THREE.MeshLambertMaterial({ color: 0x000000 })
-                );
-                slot.position.set(0, 1.3, 0.225);
-                mailboxGroup.add(slot);
-                
-            } else { // Decorative box
-                boxGeometry = new THREE.BoxGeometry(0.9, 0.6, 0.5);
-                
-                const box = new THREE.Mesh(
-                    boxGeometry,
-                    new THREE.MeshLambertMaterial({ color: mailboxColor })
-                );
-                box.position.y = 1.1;
-                box.castShadow = true;
-                mailboxGroup.add(box);
-                
-                // Decorative trim
-                const trim = new THREE.Mesh(
-                    new THREE.BoxGeometry(1, 0.05, 0.6),
-                    new THREE.MeshLambertMaterial({ color: 0xDDDDDD })
-                );
-                trim.position.y = 1.4;
-                mailboxGroup.add(trim);
-                
-                // House number
-                const numberPlate = new THREE.Mesh(
-                    new THREE.PlaneGeometry(0.3, 0.15),
-                    new THREE.MeshLambertMaterial({ color: 0xEEEEEE })
-                );
-                numberPlate.position.set(0, 1.25, 0.26);
-                mailboxGroup.add(numberPlate);
-            }
-            
-            // Add to block
-            mailboxGroup.position.set(x, 0, z);
-            mailboxGroup.userData.type = 'mailbox';  // Mark the entire group
-            blockGroup.add(mailboxGroup);
-            
-            // Register for collision
-            mailboxes.push({
-                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
-                width: 1,
-                length: 0.5
-            });
+            stone.position.set(
+                (Math.random() - 0.5) * 0.2,
+                Math.random() * 0.8,
+                0.17
+            );
+            post.add(stone);
         }
+    }
+    
+    // Box style based on mailbox type
+    let boxGeometry;
+    if (mailboxStyle === 0) { // Classic curved top
+        boxGeometry = new THREE.BoxGeometry(0.8, 0.5, 0.4);
+        
+        // Curved top
+        const topCurve = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.2, 0.2, 0.8, 16, 1, false, 0, Math.PI),
+            new THREE.MeshLambertMaterial({ color: mailboxColor })
+        );
+        topCurve.rotation.z = Math.PI / 2;
+        topCurve.position.set(0, 0.25, 0);
+        
+        const box = new THREE.Mesh(
+            boxGeometry,
+            new THREE.MeshLambertMaterial({ color: mailboxColor })
+        );
+        
+        const boxWrapper = new THREE.Group();
+        boxWrapper.add(box);
+        boxWrapper.add(topCurve);
+        boxWrapper.position.y = 1.2;
+        boxWrapper.castShadow = true;
+        mailboxGroup.add(boxWrapper);
+        
+        // Flag
+        const flag = new THREE.Mesh(
+            new THREE.BoxGeometry(0.05, 0.3, 0.2),
+            new THREE.MeshLambertMaterial({ color: 0xFF0000 })
+        );
+        flag.position.set(0.425, 1.3, 0);
+        flag.castShadow = true;
+        mailboxGroup.add(flag);
+        
+    } else if (mailboxStyle === 1) { // Modern box with slot
+        boxGeometry = new THREE.BoxGeometry(0.8, 0.7, 0.4);
+        
+        const box = new THREE.Mesh(
+            boxGeometry,
+            new THREE.MeshLambertMaterial({ color: mailboxColor })
+        );
+        box.position.y = 1.2;
+        box.castShadow = true;
+        mailboxGroup.add(box);
+        
+        // Mail slot
+        const slot = new THREE.Mesh(
+            new THREE.BoxGeometry(0.6, 0.08, 0.05),
+            new THREE.MeshLambertMaterial({ color: 0x000000 })
+        );
+        slot.position.set(0, 1.3, 0.225);
+        mailboxGroup.add(slot);
+        
+    } else { // Decorative box
+        boxGeometry = new THREE.BoxGeometry(0.9, 0.6, 0.5);
+        
+        const box = new THREE.Mesh(
+            boxGeometry,
+            new THREE.MeshLambertMaterial({ color: mailboxColor })
+        );
+        box.position.y = 1.1;
+        box.castShadow = true;
+        mailboxGroup.add(box);
+        
+        // Decorative trim
+        const trim = new THREE.Mesh(
+            new THREE.BoxGeometry(1, 0.05, 0.6),
+            new THREE.MeshLambertMaterial({ color: 0xDDDDDD })
+        );
+        trim.position.y = 1.4;
+        mailboxGroup.add(trim);
+        
+        // House number
+        const numberPlate = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.3, 0.15),
+            new THREE.MeshLambertMaterial({ color: 0xEEEEEE })
+        );
+        numberPlate.position.set(0, 1.25, 0.26);
+        mailboxGroup.add(numberPlate);
+    }
+    
+    // Add to block
+    mailboxGroup.position.set(x, 0, z);
+    mailboxGroup.userData.type = 'mailbox';  // Mark the entire group
+    blockGroup.add(mailboxGroup);
+    
+    // Register for collision
+    mailboxes.push({
+        position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+        width: 1,
+        length: 0.5
+    });
+}
 
         // Create a park with more detailed elements
         function createPark(blockGroup) {
@@ -1288,73 +1290,76 @@
 
         // Create a car
         function createCar(blockGroup, x, z) {
-            const carGroup = new THREE.Group();
-            
-            // Car body
-            const body = new THREE.Mesh(
-                new THREE.BoxGeometry(2, 1, 4),
-                new THREE.MeshLambertMaterial({ color: COLORS.CAR })
-            );
-            body.position.y = 0.75;
-            body.castShadow = true;
-            carGroup.add(body);
-            
-            // Car top
-            const top = new THREE.Mesh(
-                new THREE.BoxGeometry(1.8, 0.8, 2),
-                new THREE.MeshLambertMaterial({ color: COLORS.CAR })
-            );
-            top.position.set(0, 1.7, -0.5);
-            top.castShadow = true;
-            carGroup.add(top);
-            
-            // Windows
-            const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x88CCFF });
-            
-            // Windshield
-            const windshield = new THREE.Mesh(
-                new THREE.PlaneGeometry(1.7, 0.7),
-                windowMaterial
-            );
-            windshield.position.set(0, 1.7, 0.51);
-            windshield.rotation.x = Math.PI / 2;
-            carGroup.add(windshield);
-            
-            // Wheels
-            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
-            wheelGeometry.rotateZ(Math.PI / 2);
-            const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
-            
-            const wheelFL = new THREE.Mesh(wheelGeometry, wheelMaterial);
-            wheelFL.position.set(-1.1, 0.4, -1.5);
-            carGroup.add(wheelFL);
-            
-            const wheelFR = new THREE.Mesh(wheelGeometry, wheelMaterial);
-            wheelFR.position.set(1.1, 0.4, -1.5);
-            carGroup.add(wheelFR);
-            
-            const wheelBL = new THREE.Mesh(wheelGeometry, wheelMaterial);
-            wheelBL.position.set(-1.1, 0.4, 1.5);
-            carGroup.add(wheelBL);
-            
-            const wheelBR = new THREE.Mesh(wheelGeometry, wheelMaterial);
-            wheelBR.position.set(1.1, 0.4, 1.5);
-            carGroup.add(wheelBR);
-            
-            // Add to block
-            carGroup.position.set(x, 0, z);
-            carGroup.rotation.y = Math.random() * Math.PI * 2; // Random rotation
-            blockGroup.add(carGroup);
-            
-            // Register for collision
-            obstacles.push({
-                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
-                width: 2,
-                height: 1.7,
-                depth: 4,
-                type: 'car'
-            });
-        }
+    const carGroup = new THREE.Group();
+    
+    // Car body
+    const body = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 1, 4),
+        new THREE.MeshLambertMaterial({ color: COLORS.CAR })
+    );
+    body.position.y = 0.75;
+    body.castShadow = true;
+    carGroup.add(body);
+    
+    // Car top
+    const top = new THREE.Mesh(
+        new THREE.BoxGeometry(1.8, 0.8, 2),
+        new THREE.MeshLambertMaterial({ color: COLORS.CAR })
+    );
+    top.position.set(0, 1.7, -0.5);
+    top.castShadow = true;
+    carGroup.add(top);
+    
+    // Windows
+    const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x88CCFF });
+    
+    // Windshield
+    const windshield = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.7, 0.7),
+        windowMaterial
+    );
+    windshield.position.set(0, 1.7, 0.51);
+    windshield.rotation.x = Math.PI / 2;
+    carGroup.add(windshield);
+    
+    // Wheels
+    const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+    wheelGeometry.rotateZ(Math.PI / 2);
+    const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    
+    const wheelFL = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    wheelFL.position.set(-1.1, 0.4, -1.5);
+    carGroup.add(wheelFL);
+    
+    const wheelFR = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    wheelFR.position.set(1.1, 0.4, -1.5);
+    carGroup.add(wheelFR);
+    
+    const wheelBL = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    wheelBL.position.set(-1.1, 0.4, 1.5);
+    carGroup.add(wheelBL);
+    
+    const wheelBR = new THREE.Mesh(wheelGeometry, wheelMaterial);
+    wheelBR.position.set(1.1, 0.4, 1.5);
+    carGroup.add(wheelBR);
+    
+    // Add to block
+    carGroup.position.set(x, 0, z);
+    
+    // Set rotation based on which side of the street the car is on
+    carGroup.rotation.y = x > 0 ? 0 : Math.PI; // Cars on right face forward, left face backward
+    
+    blockGroup.add(carGroup);
+    
+    // Register for collision
+    obstacles.push({
+        position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+        width: 2,
+        height: 1.7,
+        depth: 4,
+        type: 'car'
+    });
+}
 
         // Create a drain
         function createDrain(blockGroup, x, z) {
