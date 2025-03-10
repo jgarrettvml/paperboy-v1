@@ -495,7 +495,7 @@
     // Porch steps
     const steps = new THREE.Mesh(
         new THREE.BoxGeometry(2, 0.4, 1),
-        new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
+        new THREE.MeshLambertMaterial({ color: STEPS_COLOR })
     );
     steps.position.set(0, 0.2, baseLength/2 + 1.5);
     steps.receiveShadow = true;
@@ -527,9 +527,9 @@
     driveway.receiveShadow = true;
     blockGroup.add(driveway);
 
-    // Add front grass patch
+    // Add front grass patch - fixed dimensions
     const grassPatch = new THREE.Mesh(
-        new THREE.PlaneGeometry(baseWidth, 4),
+        new THREE.PlaneGeometry(4, baseWidth),
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
     grassPatch.rotation.x = -Math.PI / 2;
