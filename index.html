@@ -511,23 +511,29 @@
             houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
             blockGroup.add(houseGroup);
 
-            // Add driveway directly to blockGroup
+            // Add driveway - perpendicular to street
             const driveway = new THREE.Mesh(
-                new THREE.PlaneGeometry(3, length + 8), // Extended to reach street
+                new THREE.PlaneGeometry(8, 3), // Width is distance to street, height is driveway width
                 new THREE.MeshLambertMaterial({ color: 0x999999 })
             );
             driveway.rotation.x = -Math.PI / 2;
-            driveway.position.set(
-                x + (isLeftSide ? -width/2 - 1 : width/2 + 1), 
-                0, // At ground level
-                z + length/2
-            );
+            
+            // Position driveway to extend from house to street
+            if (isLeftSide) {
+                driveway.position.set(x - 4, 0, z);
+            } else {
+                driveway.position.set(x + 4, 0, z);
+            }
             driveway.receiveShadow = true;
             blockGroup.add(driveway);
             
-            // Add mailbox at street edge
-            const mailboxX = x + (isLeftSide ? -width/2 - 1 : width/2 + 1); // Align with driveway
-            createMailbox(blockGroup, mailboxX, z + length - 2); // Moved closer to street
+            // Add mailbox consistently at street edge
+            const mailboxOffset = 6; // Distance from house center to street
+            if (isLeftSide) {
+                createMailbox(blockGroup, x - mailboxOffset, z);
+            } else {
+                createMailbox(blockGroup, x + mailboxOffset, z);
+            }
             
             // Add collision mesh
             const wallCollision = new THREE.Mesh(
