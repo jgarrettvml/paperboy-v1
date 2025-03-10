@@ -588,21 +588,23 @@
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
     grassBase.rotation.x = -Math.PI / 2;
-    grassBase.position.set(-(blockWidth/4), -0.02, blockLength / 2); // Shifted to cover correct area
+    grassBase.position.set(-(blockWidth/4), -0.02, blockLength / 2);
     grassBase.receiveShadow = true;
     blockGroup.add(grassBase);
     
-    // Create street - this is where cars and player go
+    // Create street - now only extending to sidewalk
+    const streetWidth = blockWidth + streetWidth * 2;
+    const streetStart = -(blockWidth / 2) - 4; // Align with sidewalk
     const street = new THREE.Mesh(
-        new THREE.PlaneGeometry(blockWidth + streetWidth * 2, blockLength),
+        new THREE.PlaneGeometry(streetWidth/2, blockLength),
         new THREE.MeshLambertMaterial({ color: COLORS.STREET })
     );
     street.rotation.x = -Math.PI / 2;
-    street.position.set(0, 0, blockLength / 2);
+    street.position.set(streetWidth/4, 0, blockLength / 2); // Moved to align with sidewalk
     street.receiveShadow = true;
     blockGroup.add(street);
     
-    // Create sidewalk
+    // Create sidewalks
     const leftSidewalk = new THREE.Mesh(
         new THREE.PlaneGeometry(3, blockLength),
         new THREE.MeshLambertMaterial({ color: COLORS.SIDEWALK })
