@@ -460,100 +460,112 @@
         }
 
         function createHouse(blockGroup, x, z, width, length, isLeftSide) {
-            const houseGroup = new THREE.Group();
-            
-            // Base house dimensions
-            const baseWidth = width;
-            const baseLength = length - 3;
-            
-            // House base
-            const base = new THREE.Mesh(
-                new THREE.BoxGeometry(baseWidth, 2, baseLength),
-                new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_WALL })
-            );
-            base.position.set(0, 1, -1.5);
-            base.castShadow = true;
-            
-            // Roof
-            const roof = new THREE.Mesh(
-                new THREE.ConeGeometry(baseWidth * 0.7, 1.5, 4),
-                new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF })
-            );
-            roof.position.set(0, 2.75, -1.5);
-            roof.rotation.y = Math.PI / 4;
-            roof.castShadow = true;
-            
-            // Front porch
-            const porch = new THREE.Mesh(
-                new THREE.BoxGeometry(baseWidth, 0.2, 3),
-                new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
-            );
-            porch.position.set(0, 0.1, baseLength/2);
-            porch.receiveShadow = true;
-            porch.userData.type = 'porch';
-            
-            // Porch steps
-            const steps = new THREE.Mesh(
-                new THREE.BoxGeometry(2, 0.4, 1),
-                new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
-            );
-            steps.position.set(0, 0.2, baseLength/2 + 1.5);
-            steps.receiveShadow = true;
-            
-            // Add all parts to house group
-            houseGroup.add(base);
-            houseGroup.add(roof);
-            houseGroup.add(porch);
-            houseGroup.add(steps);
-            
-            // Position and rotate house
-            houseGroup.position.set(x, 0, z);
-            houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
-            blockGroup.add(houseGroup);
+    const houseGroup = new THREE.Group();
+    
+    // Base house dimensions
+    const baseWidth = width;
+    const baseLength = length - 3;
+    
+    // House base
+    const base = new THREE.Mesh(
+        new THREE.BoxGeometry(baseWidth, 2, baseLength),
+        new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_WALL })
+    );
+    base.position.set(0, 1, -1.5);
+    base.castShadow = true;
+    
+    // Roof
+    const roof = new THREE.Mesh(
+        new THREE.ConeGeometry(baseWidth * 0.7, 1.5, 4),
+        new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF })
+    );
+    roof.position.set(0, 2.75, -1.5);
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    
+    // Front porch
+    const porch = new THREE.Mesh(
+        new THREE.BoxGeometry(baseWidth, 0.2, 3),
+        new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
+    );
+    porch.position.set(0, 0.1, baseLength/2);
+    porch.receiveShadow = true;
+    porch.userData.type = 'porch';
+    
+    // Porch steps
+    const steps = new THREE.Mesh(
+        new THREE.BoxGeometry(2, 0.4, 1),
+        new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
+    );
+    steps.position.set(0, 0.2, baseLength/2 + 1.5);
+    steps.receiveShadow = true;
+    
+    // Add all parts to house group
+    houseGroup.add(base);
+    houseGroup.add(roof);
+    houseGroup.add(porch);
+    houseGroup.add(steps);
+    
+    // Position and rotate house
+    houseGroup.position.set(x, 0, z);
+    houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
+    blockGroup.add(houseGroup);
 
-            // Add driveway from garage to street
-            const drivewayLength = 8;  // Length from house to street
-            const drivewayWidth = 3;   // Standard driveway width
-            const driveway = new THREE.Mesh(
-                new THREE.PlaneGeometry(drivewayWidth, drivewayLength),
-                new THREE.MeshLambertMaterial({ color: 0x999999 })
-            );
-            driveway.rotation.x = -Math.PI / 2;
-            
-            // Position driveway to start at garage and extend to street
-            const driveX = isLeftSide ? 
-                x + baseWidth/2 : // Left houses - driveway starts at right edge
-                x - baseWidth/2;  // Right houses - driveway starts at left edge
-            driveway.position.set(driveX, -0.01, z + drivewayLength/2 - 2); // Adjusted z position
-            driveway.receiveShadow = true;
-            blockGroup.add(driveway);
-            
-            // Add mailbox at street edge next to driveway
-            const mailboxX = driveX;  // Align with driveway
-            const mailboxZ = z + 3;   // Near street
-            createMailbox(blockGroup, mailboxX, mailboxZ);
-            
-            // Add collision mesh
-            const wallCollision = new THREE.Mesh(
-                new THREE.BoxGeometry(baseWidth, 3, 0.5),
-                new THREE.MeshBasicMaterial({ visible: false })
-            );
-            wallCollision.position.set(x + (isLeftSide ? length/2 : -length/2), 1.5, z);
-            wallCollision.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
-            wallCollision.userData.type = 'wall';
-            blockGroup.add(wallCollision);
-            
-            // Register porch for delivery
-            porches.push({
-                position: new THREE.Vector3(
-                    x + (isLeftSide ? length/2 : -length/2),
-                    0.2,
-                    z + blockGroup.position.z
-                ),
-                width: baseWidth,
-                length: 3
-            });
-        }
+    // Add driveway from garage to street
+    const drivewayLength = 8;  // Length from house to street
+    const drivewayWidth = 3;   // Standard driveway width
+    const driveway = new THREE.Mesh(
+        new THREE.PlaneGeometry(drivewayWidth, drivewayLength),
+        new THREE.MeshLambertMaterial({ color: 0x999999 })
+    );
+    driveway.rotation.x = -Math.PI / 2;
+    
+    // Position driveway to start at house side and extend to street
+    const driveX = isLeftSide ? 
+        x + baseWidth/2 : // Left houses - driveway starts at right edge
+        x - baseWidth/2;  // Right houses - driveway starts at left edge
+    driveway.position.set(driveX, -0.01, z + drivewayLength/2 - 2);
+    driveway.receiveShadow = true;
+    blockGroup.add(driveway);
+
+    // Add front lawn grass
+    const grassWidth = baseWidth;  // Same width as house
+    const grassLength = 5;         // Distance from porch to sidewalk
+    const grass = new THREE.Mesh(
+        new THREE.PlaneGeometry(grassWidth, grassLength),
+        new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
+    );
+    grass.rotation.x = -Math.PI / 2;
+    grass.position.set(x, -0.02, z + baseLength/2 + 2); // Position in front of porch to sidewalk
+    grass.receiveShadow = true;
+    blockGroup.add(grass);
+    
+    // Add mailbox at street edge next to driveway
+    const mailboxX = driveX;  // Align with driveway
+    const mailboxZ = z + 3;   // Near street
+    createMailbox(blockGroup, mailboxX, mailboxZ);
+    
+    // Add collision mesh
+    const wallCollision = new THREE.Mesh(
+        new THREE.BoxGeometry(baseWidth, 3, 0.5),
+        new THREE.MeshBasicMaterial({ visible: false })
+    );
+    wallCollision.position.set(x + (isLeftSide ? length/2 : -length/2), 1.5, z);
+    wallCollision.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
+    wallCollision.userData.type = 'wall';
+    blockGroup.add(wallCollision);
+    
+    // Register porch for delivery
+    porches.push({
+        position: new THREE.Vector3(
+            x + (isLeftSide ? length/2 : -length/2),
+            0.2,
+            z + blockGroup.position.z
+        ),
+        width: baseWidth,
+        length: 3
+    });
+}
 
         // Create a block with houses
         function createHousesBlock(blockGroup) {
