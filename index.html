@@ -462,46 +462,73 @@
         function createHouse(blockGroup, x, z, width, length, mailboxOnLeft) {
             const houseGroup = new THREE.Group();
             
-            // House base
+            // Set the house back from the street by adding an offset
+            const setback = 4; // 4 units back from original position
+            
+            // Create driveway
+            const driveway = new THREE.Mesh(
+                new THREE.PlaneGeometry(3, setback),
+                new THREE.MeshLambertMaterial({ color: 0x999999 }) // Concrete color
+            );
+            driveway.rotation.x = -Math.PI / 2;
+            driveway.position.set(0, 0.01, -length/2 - setback/2);
+            driveway.receiveShadow = true;
+            houseGroup.add(driveway);
+
+            // House base - moved back by setback
             const base = new THREE.Mesh(
                 new THREE.BoxGeometry(width, 2, length),
                 new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_WALL })
             );
-            base.position.y = 1;
+            base.position.set(0, 1, -setback);
             base.castShadow = true;
             houseGroup.add(base);
             
-            // Roof
+            // Roof - moved back by setback
             const roof = new THREE.Mesh(
                 new THREE.ConeGeometry(width * 0.7, 1.5, 4),
                 new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF })
             );
-            roof.position.y = 2.75;
+            roof.position.set(0, 2.75, -setback);
             roof.rotation.y = Math.PI / 4;
             roof.castShadow = true;
             houseGroup.add(roof);
             
-            // Porch
+            // Porch - at the front of the house
             const porch = new THREE.Mesh(
                 new THREE.BoxGeometry(3, 0.2, 2),
                 new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
             );
-            porch.position.set(-1, 0.1, length / 2 + 1);
+            porch.position.set(0, 0.1, -setback + length/2 + 1);
             porch.receiveShadow = true;
             houseGroup.add(porch);
+
+            // Porch steps
+            const steps = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 0.4, 0.8),
+                new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
+            );
+            steps.position.set(0, 0.2, -setback + length/2 + 2);
+            steps.receiveShadow = true;
+            houseGroup.add(steps);
             
             // Add mailbox
             const mailboxX = mailboxOnLeft ? -width/2 - 1 : width/2 + 1;
-            createMailbox(blockGroup, x + mailboxX, z + length/2);
+            createMailbox(blockGroup, x + mailboxX, z);
             
             // Add house to block
             houseGroup.position.set(x, 0, z);
             blockGroup.add(houseGroup);
             
-            // Add porch to deliverable locations
+            // Add porch to deliverable locations with adjusted position for setback
             porches.push({
-                position: new THREE.Vector3(x - 1, 0, z + length / 2 + 1 + blockGroup.position.z),
+                position: new THREE.Vector3(
+                    x, 
+                    0.2, // Slight elevation for better collision detection
+                    z - setback + length/2 + 1 + blockGroup.position.z
+                ),
                 width: 3,
+                height: 0.4, // Add height for better collision detection
                 length: 2
             });
         }
@@ -1535,10 +1562,11 @@
                 for (const mailbox of mailboxes) {
                     const dx = Math.abs(newspaper.position.x - mailbox.position.x);
                     const dz = Math.abs(newspaper.position.z - mailbox.position.z);
+                    const dy = Math.abs(newspaper.position.y - 1.2); // Check height relative to mailbox
                     
-                    if (dx < (mailbox.width / 2 + 0.2) &&
-                        dz < (mailbox.length / 2 + 0.2) &&
-                        newspaper.position.y < 1.5) {
+                    if (dx < (mailbox.width/2 + 0.3) && // Slightly larger detection area
+                        dz < (mailbox.length/2 + 0.3) && 
+                        dy < 1.5) { // More forgiving height check
                         
                         // Delivered to mailbox
                         newspaper.delivered = true;
@@ -1552,10 +1580,11 @@
                 for (const porch of porches) {
                     const dx = Math.abs(newspaper.position.x - porch.position.x);
                     const dz = Math.abs(newspaper.position.z - porch.position.z);
+                    const dy = newspaper.position.y; // Check height from ground
                     
-                    if (dx < (porch.width / 2 + 0.2) &&
-                        dz < (porch.length / 2 + 0.2) &&
-                        newspaper.position.y < 1) {
+                    if (dx < (porch.width/2 + 0.5) && // Larger detection area
+                        dz < (porch.length/2 + 0.5) && 
+                        dy < 1.0) { // More forgiving height check
                         
                         // Delivered to porch
                         newspaper.delivered = true;
