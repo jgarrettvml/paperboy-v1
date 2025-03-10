@@ -459,6 +459,53 @@
             });
         }
 
+        function createHouse(blockGroup, x, z, width, length, mailboxOnLeft) {
+            const houseGroup = new THREE.Group();
+            
+            // House base
+            const base = new THREE.Mesh(
+                new THREE.BoxGeometry(width, 2, length),
+                new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_WALL })
+            );
+            base.position.y = 1;
+            base.castShadow = true;
+            houseGroup.add(base);
+            
+            // Roof
+            const roof = new THREE.Mesh(
+                new THREE.ConeGeometry(width * 0.7, 1.5, 4),
+                new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF })
+            );
+            roof.position.y = 2.75;
+            roof.rotation.y = Math.PI / 4;
+            roof.castShadow = true;
+            houseGroup.add(roof);
+            
+            // Porch
+            const porch = new THREE.Mesh(
+                new THREE.BoxGeometry(3, 0.2, 2),
+                new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
+            );
+            porch.position.set(-1, 0.1, length / 2 + 1);
+            porch.receiveShadow = true;
+            houseGroup.add(porch);
+            
+            // Add mailbox
+            const mailboxX = mailboxOnLeft ? -width/2 - 1 : width/2 + 1;
+            createMailbox(blockGroup, x + mailboxX, z + length/2);
+            
+            // Add house to block
+            houseGroup.position.set(x, 0, z);
+            blockGroup.add(houseGroup);
+            
+            // Add porch to deliverable locations
+            porches.push({
+                position: new THREE.Vector3(x - 1, 0, z + length / 2 + 1 + blockGroup.position.z),
+                width: 3,
+                length: 2
+            });
+        }
+
         // Create a block with houses
         function createHousesBlock(blockGroup) {
             // Create street
@@ -540,130 +587,6 @@
             
             // Add obstacles
             addObstacles(blockGroup);
-        }
-
-        // Create a house
-        function createHouse(blockGroup, x, z, width, length, mailboxOnLeft) {
-            const houseGroup = new THREE.Group();
-            
-            // Base/foundation
-            const base = new THREE.Mesh(
-                new THREE.BoxGeometry(width, 0.5, length),
-                new THREE.MeshLambertMaterial({ color: 0x999999 })
-            );
-            base.position.y = 0.25;
-            base.receiveShadow = true;
-            houseGroup.add(base);
-            
-            // Main house structure
-            const wallHeight = 3;
-            const walls = new THREE.Mesh(
-                new THREE.BoxGeometry(width, wallHeight, length),
-                new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_WALL })
-            );
-            walls.position.y = wallHeight / 2 + 0.5;
-            walls.castShadow = true;
-            walls.receiveShadow = true;
-            houseGroup.add(walls);
-            
-            // Roof
-            const roofHeight = 2;
-            const roofGeometry = new THREE.ConeGeometry(
-                width / Math.sqrt(2), 
-                roofHeight, 
-                4
-            );
-            const roof = new THREE.Mesh(
-                roofGeometry,
-                new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF })
-            );
-            roof.position.y = wallHeight + 0.5 + roofHeight / 2;
-            roof.rotation.y = Math.PI / 4;
-            roof.castShadow = true;
-            houseGroup.add(roof);
-            
-            // Windows
-            const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x88CCFF });
-            
-            // Front windows
-            const frontWindow1 = new THREE.Mesh(
-                new THREE.PlaneGeometry(1, 1),
-                windowMaterial
-            );
-            frontWindow1.position.set(0, wallHeight / 2 + 0.5, length / 2 + 0.01);
-            frontWindow1.rotation.y = Math.PI;
-            houseGroup.add(frontWindow1);
-            
-            // Back windows
-            const backWindow1 = new THREE.Mesh(
-                new THREE.PlaneGeometry(1, 1),
-                windowMaterial
-            );
-            backWindow1.position.set(0, wallHeight / 2 + 0.5, -length / 2 - 0.01);
-            houseGroup.add(backWindow1);
-            
-            // Side windows
-            const sideWindow1 = new THREE.Mesh(
-                new THREE.PlaneGeometry(1, 1),
-                windowMaterial
-            );
-            sideWindow1.position.set(width / 2 + 0.01, wallHeight / 2 + 0.5, 0);
-            sideWindow1.rotation.y = -Math.PI / 2;
-            houseGroup.add(sideWindow1);
-            
-            const sideWindow2 = new THREE.Mesh(
-                new THREE.PlaneGeometry(1, 1),
-                windowMaterial
-            );
-            sideWindow2.position.set(-width / 2 - 0.01, wallHeight / 2 + 0.5, 0);
-            sideWindow2.rotation.y = Math.PI / 2;
-            houseGroup.add(sideWindow2);
-            
-            // Door
-            const door = new THREE.Mesh(
-                new THREE.PlaneGeometry(1, 2),
-                new THREE.MeshLambertMaterial({ color: 0xAA3333 })
-            );
-            door.position.set(-1, 1.5, length / 2 + 0.01);
-            door.rotation.y = Math.PI;
-            houseGroup.add(door);
-            
-            // Porch
-            const porch = new THREE.Mesh(
-                new THREE.BoxGeometry(3, 0.2, 2),
-                new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
-            );
-            porch.position.set(-1, 0.6, length / 2 + 1);
-            porch.receiveShadow = true;
-            houseGroup.add(porch);
-            
-            // Add house to block
-            houseGroup.position.set(x, 0, z);
-            blockGroup.add(houseGroup);
-
-            // Create mailbox
-            const mailboxX = mailboxOnLeft ? x - width / 2 - 1 : x + width / 2 + 1;
-            const mailboxZ = z + length / 4;
-            createMailbox(blockGroup, mailboxX, mailboxZ);
-            
-            // Register houses for collision detection
-            houses.push({
-                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
-                width: width,
-                length: length,
-                porch: {
-                    position: new THREE.Vector3(x - 1, 0, z + length / 2 + 1 + blockGroup.position.z),
-                    width: 3,
-                    length: 2
-                }
-            });
-            
-            // Add porch to deliverable locations
-            porches.push({
-                position: new THREE.Vector3(x - 1, 0, z + length / 2 + 1 + blockGroup.position.z),
-                width: 3,
-                length: 2
-            });
         }
 
         // Create a mailbox with more detail
@@ -927,3 +850,902 @@
                 createPond(blockGroup, pondX, pondZ);
             }
         }
+        
+        // Create improved hill
+        function createHill(blockGroup, x, z) {
+            const hillWidth = 10;
+            const hillHeight = 2;
+            
+            // Random hill size variation
+            const sizeVariation = 0.7 + Math.random() * 0.6;
+            const actualWidth = hillWidth * sizeVariation;
+            const actualHeight = hillHeight * sizeVariation;
+            
+            // Create hill geometry
+            const hillGeometry = new THREE.CylinderGeometry(
+                0, 
+                actualWidth / 2, 
+                actualHeight, 
+                16, 
+                1, 
+                false
+            );
+            hillGeometry.rotateX(Math.PI / 2);
+            
+            // Hill color variation
+            const hillColor = Math.random() > 0.5 ? 0x228822 : 0x2A9D2A;
+            
+            const hill = new THREE.Mesh(
+                hillGeometry,
+                new THREE.MeshLambertMaterial({ color: hillColor })
+            );
+            hill.position.set(x, actualHeight / 2, z);
+            hill.castShadow = true;
+            hill.receiveShadow = true;
+            blockGroup.add(hill);
+            
+            // Add some details to the hill
+            // Small rocks
+            for (let i = 0; i < 5; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = Math.random() * (actualWidth / 2);
+                const rockX = x + Math.cos(angle) * distance;
+                const rockZ = z + Math.sin(angle) * distance;
+                const rockHeight = Math.random() * actualHeight;
+                
+                const rock = new THREE.Mesh(
+                    new THREE.DodecahedronGeometry(0.2 + Math.random() * 0.3, 0),
+                    new THREE.MeshLambertMaterial({ color: 0x888888 })
+                );
+                rock.position.set(rockX, rockHeight * 0.7, rockZ);
+                blockGroup.add(rock);
+            }
+            
+            // Register hill for collision and jumping
+            obstacles.push({
+                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+                width: actualWidth,
+                height: actualHeight,
+                depth: actualWidth,
+                type: 'hill'
+            });
+        }
+        
+        // Create improved tree with different styles
+        function createTree(blockGroup, x, z, style = 0) {
+            const treeGroup = new THREE.Group();
+            
+            // Different tree styles
+            if (style === 0) { // Pine tree
+                // Trunk
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.3, 2, 8),
+                    new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+                );
+                trunk.position.y = 1;
+                trunk.castShadow = true;
+                treeGroup.add(trunk);
+                
+                // Leaves - multiple layers of cones
+                for (let i = 0; i < 3; i++) {
+                    const coneSize = 1.5 - i * 0.3;
+                    const coneHeight = 1.5 - i * 0.2;
+                    const coneY = 2 + i * 0.8;
+                    
+                    const leaves = new THREE.Mesh(
+                        new THREE.ConeGeometry(coneSize, coneHeight, 8),
+                        new THREE.MeshLambertMaterial({ color: 0x228822 })
+                    );
+                    leaves.position.y = coneY;
+                    leaves.castShadow = true;
+                    treeGroup.add(leaves);
+                }
+            } else if (style === 1) { // Oak tree
+                // Thicker trunk
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.4, 0.5, 2.5, 8),
+                    new THREE.MeshLambertMaterial({ color: 0x6B4423 })
+                );
+                trunk.position.y = 1.25;
+                trunk.castShadow = true;
+                treeGroup.add(trunk);
+                
+                // Spherical foliage
+                const leaves = new THREE.Mesh(
+                    new THREE.SphereGeometry(2, 8, 8),
+                    new THREE.MeshLambertMaterial({ color: 0x4D8C57 })
+                );
+                leaves.position.y = 3.5;
+                leaves.castShadow = true;
+                treeGroup.add(leaves);
+                
+                // Add some branch details
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2;
+                    const branch = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.2, 1.5, 4),
+                        new THREE.MeshLambertMaterial({ color: 0x6B4423 })
+                    );
+                    branch.position.set(
+                        Math.cos(angle) * 0.7,
+                        2,
+                        Math.sin(angle) * 0.7
+                    );
+                    branch.rotation.z = Math.PI / 3;
+                    branch.rotation.y = angle;
+                    treeGroup.add(branch);
+                }
+            } else { // Maple tree
+                // Thin trunk
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.25, 0.35, 3, 8),
+                    new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+                );
+                trunk.position.y = 1.5;
+                trunk.castShadow = true;
+                treeGroup.add(trunk);
+                
+                // Colorful foliage - multiple spheres
+                const colors = [0xE27D60, 0xE8A87C, 0xC38D9E, 0xE8D2AE]; // Fall colors
+                
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i / 5) * Math.PI * 2;
+                    const distance = 0.7 + Math.random() * 0.5;
+                    
+                    const leafCluster = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.8 + Math.random() * 0.4, 8, 8),
+                        new THREE.MeshLambertMaterial({ color: colors[Math.floor(Math.random() * colors.length)] })
+                    );
+                    leafCluster.position.set(
+                        Math.cos(angle) * distance,
+                        3 + Math.random() * 0.5,
+                        Math.sin(angle) * distance
+                    );
+                    leafCluster.castShadow = true;
+                    treeGroup.add(leafCluster);
+                }
+            }
+            
+            // Add to block
+            treeGroup.position.set(x, 0, z);
+            blockGroup.add(treeGroup);
+            
+            // Register for collision
+            obstacles.push({
+                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+                width: 1,
+                height: style === 1 ? 4.5 : 4,
+                depth: 1,
+                type: 'tree'
+            });
+        }
+        
+        // Create a park bench
+        function createBench(blockGroup, x, z, facing = 1) {
+            const benchGroup = new THREE.Group();
+            
+            // Bench seat
+            const seat = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 0.1, 0.7),
+                new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+            );
+            seat.position.y = 0.5;
+            benchGroup.add(seat);
+            
+            // Bench back
+            const back = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 0.7, 0.1),
+                new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+            );
+            back.position.set(0, 0.8, -0.3 * facing);
+            benchGroup.add(back);
+            
+            // Bench legs
+            for (let i = -1; i <= 1; i += 2) {
+                const leg = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.1, 0.5, 0.7),
+                    new THREE.MeshLambertMaterial({ color: 0x666666 })
+                );
+                leg.position.set(i * 0.9, 0.25, 0);
+                benchGroup.add(leg);
+                
+                // Back support
+                const backSupport = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.1, 0.7, 0.1),
+                    new THREE.MeshLambertMaterial({ color: 0x666666 })
+                );
+                backSupport.position.set(i * 0.9, 0.8, -0.3 * facing);
+                benchGroup.add(backSupport);
+            }
+            
+            // Add to block
+            benchGroup.position.set(x, 0, z);
+            benchGroup.rotation.y = facing > 0 ? Math.PI : 0;
+            blockGroup.add(benchGroup);
+            
+            // Register for collision
+            obstacles.push({
+                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+                width: 2,
+                height: 1,
+                depth: 0.7,
+                type: 'bench'
+            });
+        }
+        
+        // Create flowers
+        function createFlower(blockGroup, x, z) {
+            const flowerGroup = new THREE.Group();
+            
+            // Stem
+            const stem = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.02, 0.3, 8),
+                new THREE.MeshLambertMaterial({ color: 0x228822 })
+            );
+            stem.position.y = 0.15;
+            flowerGroup.add(stem);
+            
+            // Flower head - random color
+            const colors = [0xFF5555, 0xFFFF55, 0xFF55FF, 0x55FFFF, 0xFFAA55, 0xAA55FF];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const flowerType = Math.floor(Math.random() * 2);
+            
+            if (flowerType === 0) { // Daisy-like flower
+                // Petals
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const petal = new THREE.Mesh(
+                        new THREE.PlaneGeometry(0.1, 0.1),
+                        new THREE.MeshLambertMaterial({ 
+                            color: color,
+                            side: THREE.DoubleSide
+                        })
+                    );
+                    petal.position.set(
+                        Math.cos(angle) * 0.08,
+                        0.3,
+                        Math.sin(angle) * 0.08
+                    );
+                    petal.rotation.x = Math.PI / 2;
+                    petal.rotation.y = angle;
+                    flowerGroup.add(petal);
+                }
+                
+                // Center
+                const center = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.04, 8, 8),
+                    new THREE.MeshLambertMaterial({ color: 0xFFFF00 })
+                );
+                center.position.y = 0.3;
+                flowerGroup.add(center);
+            } else { // Tulip-like flower
+                const flower = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.08, 0.15, 6, 1, true),
+                    new THREE.MeshLambertMaterial({ color: color })
+                );
+                flower.position.y = 0.35;
+                flower.rotation.x = Math.PI;
+                flowerGroup.add(flower);
+            }
+            
+            // Add to block
+            flowerGroup.position.set(x, 0, z);
+            blockGroup.add(flowerGroup);
+        }
+        
+        // Create a small pond
+        function createPond(blockGroup, x, z) {
+            // Pond base - slightly depressed into ground
+            const pondSize = 3 + Math.random() * 2;
+            const pondDepth = 0.3;
+            
+            // Dig out pond area
+            const pondHole = new THREE.Mesh(
+                new THREE.CylinderGeometry(pondSize/2, pondSize/2, pondDepth, 24),
+                new THREE.MeshLambertMaterial({ color: 0x667788 })
+            );
+            pondHole.position.set(x, -pondDepth/2 + 0.01, z);
+            pondHole.rotation.x = Math.PI / 2;
+            blockGroup.add(pondHole);
+            
+            // Water surface
+            const waterSurface = new THREE.Mesh(
+                new THREE.CircleGeometry(pondSize/2 - 0.1, 24),
+                new THREE.MeshLambertMaterial({ 
+                    color: 0x3399CC,
+                    transparent: true,
+                    opacity: 0.7
+                })
+            );
+            waterSurface.position.set(x, 0.03, z);
+            waterSurface.rotation.x = -Math.PI / 2;
+            blockGroup.add(waterSurface);
+            
+            // Add rocks around the edge
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const distance = pondSize/2 - 0.2 + Math.random() * 0.4;
+                
+                const rock = new THREE.Mesh(
+                    new THREE.DodecahedronGeometry(0.15 + Math.random() * 0.15, 0),
+                    new THREE.MeshLambertMaterial({ color: 0x888888 })
+                );
+                rock.position.set(
+                    x + Math.cos(angle) * distance,
+                    0.1,
+                    z + Math.sin(angle) * distance
+                );
+                rock.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+                blockGroup.add(rock);
+            }
+            
+            // Register pond for collision
+            obstacles.push({
+                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+                width: pondSize,
+                height: 0.1,
+                depth: pondSize,
+                type: 'pond'
+            });
+        }
+
+        // Create a hill
+        function createHill(blockGroup, x, z) {
+            const hillWidth = 10;
+            const hillHeight = 2;
+            
+            // Create hill geometry
+            const hillGeometry = new THREE.CylinderGeometry(
+                0, 
+                hillWidth / 2, 
+                hillHeight, 
+                16, 
+                1, 
+                false
+            );
+            hillGeometry.rotateX(Math.PI / 2);
+            
+            const hill = new THREE.Mesh(
+                hillGeometry,
+                new THREE.MeshLambertMaterial({ color: COLORS.HILL })
+            );
+            hill.position.set(x, hillHeight / 2, z);
+            hill.castShadow = true;
+            hill.receiveShadow = true;
+            blockGroup.add(hill);
+            
+            // Register hill for collision and jumping
+            obstacles.push({
+                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+                width: hillWidth,
+                height: hillHeight,
+                depth: hillWidth,
+                type: 'hill'
+            });
+        }
+
+        // Create a tree
+        function createTree(blockGroup, x, z) {
+            const treeGroup = new THREE.Group();
+            
+            // Trunk
+            const trunk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.2, 0.3, 2, 8),
+                new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+            );
+            trunk.position.y = 1;
+            trunk.castShadow = true;
+            treeGroup.add(trunk);
+            
+            // Leaves
+            const leaves = new THREE.Mesh(
+                new THREE.ConeGeometry(1.5, 3, 8),
+                new THREE.MeshLambertMaterial({ color: 0x228822 })
+            );
+            leaves.position.y = 3;
+            leaves.castShadow = true;
+            treeGroup.add(leaves);
+            
+            // Add to block
+            treeGroup.position.set(x, 0, z);
+            blockGroup.add(treeGroup);
+            
+            // Register for collision
+            obstacles.push({
+                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+                width: 1,
+                height: 4,
+                depth: 1,
+                type: 'tree'
+            });
+        }
+
+        // Add obstacles to a block
+        function addObstacles(blockGroup) {
+            // Add cars
+            for (let i = 0; i < 2; i++) {
+                const carX = (Math.random() - 0.5) * (blockWidth - 4);
+                const carZ = Math.random() * blockLength;
+                createCar(blockGroup, carX, carZ);
+            }
+            
+            // Add street drains
+            for (let i = 0; i < 3; i++) {
+                const drainX = (Math.random() - 0.5) * blockWidth;
+                const drainZ = i * (blockLength / 3) + Math.random() * (blockLength / 6);
+                createDrain(blockGroup, drainX, drainZ);
+            }
+        }
+
+        // Create a car
+        function createCar(blockGroup, x, z) {
+            const carGroup = new THREE.Group();
+            
+            // Car body
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 1, 4),
+                new THREE.MeshLambertMaterial({ color: COLORS.CAR })
+            );
+            body.position.y = 0.75;
+            body.castShadow = true;
+            carGroup.add(body);
+            
+            // Car top
+            const top = new THREE.Mesh(
+                new THREE.BoxGeometry(1.8, 0.8, 2),
+                new THREE.MeshLambertMaterial({ color: COLORS.CAR })
+            );
+            top.position.set(0, 1.7, -0.5);
+            top.castShadow = true;
+            carGroup.add(top);
+            
+            // Windows
+            const windowMaterial = new THREE.MeshLambertMaterial({ color: 0x88CCFF });
+            
+            // Windshield
+            const windshield = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.7, 0.7),
+                windowMaterial
+            );
+            windshield.position.set(0, 1.7, 0.51);
+            windshield.rotation.x = Math.PI / 2;
+            carGroup.add(windshield);
+            
+            // Wheels
+            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+            wheelGeometry.rotateZ(Math.PI / 2);
+            const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+            
+            const wheelFL = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheelFL.position.set(-1.1, 0.4, -1.5);
+            carGroup.add(wheelFL);
+            
+            const wheelFR = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheelFR.position.set(1.1, 0.4, -1.5);
+            carGroup.add(wheelFR);
+            
+            const wheelBL = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheelBL.position.set(-1.1, 0.4, 1.5);
+            carGroup.add(wheelBL);
+            
+            const wheelBR = new THREE.Mesh(wheelGeometry, wheelMaterial);
+            wheelBR.position.set(1.1, 0.4, 1.5);
+            carGroup.add(wheelBR);
+            
+            // Add to block
+            carGroup.position.set(x, 0, z);
+            carGroup.rotation.y = Math.random() * Math.PI * 2; // Random rotation
+            blockGroup.add(carGroup);
+            
+            // Register for collision
+            obstacles.push({
+                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+                width: 2,
+                height: 1.7,
+                depth: 4,
+                type: 'car'
+            });
+        }
+
+        // Create a drain
+        function createDrain(blockGroup, x, z) {
+            const drain = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 0.1, 1),
+                new THREE.MeshLambertMaterial({ color: COLORS.DRAIN })
+            );
+            drain.position.set(x, 0.05, z);
+            drain.rotation.x = -Math.PI / 2;
+            drain.receiveShadow = true;
+            blockGroup.add(drain);
+            
+            // Register for collision
+            obstacles.push({
+                position: new THREE.Vector3(x, 0, z + blockGroup.position.z),
+                width: 1,
+                height: 0.1,
+                depth: 1,
+                type: 'drain'
+            });
+        }
+
+        // Create a newspaper
+        function createNewspaper(x, y, z, velocityX, velocityZ) {
+            if (papers <= 0) return;
+            
+            papers--;
+            updateUI();
+            
+            const newspaper = new THREE.Mesh(
+                new THREE.BoxGeometry(0.3, 0.1, 0.3),
+                new THREE.MeshLambertMaterial({ color: COLORS.NEWSPAPER })
+            );
+            newspaper.position.set(x, y, z);
+            newspaper.castShadow = true;
+            scene.add(newspaper);
+            
+            newspapers.push({
+                object: newspaper,
+                velocity: new THREE.Vector3(velocityX, 0.2, velocityZ),
+                position: newspaper.position.clone(),
+                thrown: true,
+                delivered: false
+            });
+        }
+
+        // Set up control listeners
+        function setupControls() {
+            const keys = {
+                ArrowUp: false,
+                ArrowDown: false,
+                ArrowLeft: false,
+                ArrowRight: false,
+                w: false,
+                a: false,
+                s: false,
+                d: false,
+                ' ': false
+            };
+            
+            window.addEventListener('keydown', (e) => {
+                if (keys.hasOwnProperty(e.key)) {
+                    keys[e.key] = true;
+                    
+                    // Jump when going over a hill
+                    if ((e.key === 'ArrowUp' || e.key === 'w') && player.canJump && isOnHill()) {
+                        startJump();
+                    }
+                    
+                    // Throw newspaper with space bar
+                    if (e.key === ' ' && gameActive && papers > 0) {
+                        // Calculate direction - either left or right based on player rotation
+                        const throwDirection = new THREE.Vector3();
+                        const playerDirection = new THREE.Vector3(0, 0, 1).applyQuaternion(playerObject.quaternion);
+                        
+                        // Cross product to get perpendicular direction (left or right)
+                        // We'll use the current player direction to determine which side to throw
+                        const throwSide = Math.sin(playerObject.rotation.y) > 0 ? -1 : 1; // Left or right
+                        
+                        throwDirection.x = playerDirection.z * throwSide;
+                        throwDirection.z = -playerDirection.x * throwSide;
+
+                        createNewspaper(
+                            player.position.x + throwDirection.x * 0.5,
+                            player.position.y + 1,
+                            player.position.z + throwDirection.z * 0.5,
+                            throwDirection.x * 0.5,
+                            throwDirection.z * 0.5
+                        );
+                    }
+                }
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                if (keys.hasOwnProperty(e.key)) {
+                    keys[e.key] = false;
+                }
+            });
+            
+            // Update player controls
+            setInterval(() => {
+                if (!gameActive) return;
+                
+                // Reset lateral velocity only
+                player.velocity.x = 0;
+                
+                // Always move forward automatically
+                player.velocity.z = player.speed;
+                
+                // Apply controls for left and right movement only (reversed as requested)
+                if (keys.ArrowLeft || keys.a) {
+                    player.velocity.x = player.speed; // Right movement (reversed)
+                }
+                if (keys.ArrowRight || keys.d) {
+                    player.velocity.x = -player.speed; // Left movement (reversed)
+                }
+                
+                // Update player rotation based on movement direction
+                const angle = Math.atan2(player.velocity.x, player.velocity.z);
+                playerObject.rotation.y = angle;
+            }, 16);
+            
+            // Set up start and restart buttons
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', restartGame);
+        }
+
+        // Start jump
+        function startJump() {
+            if (!isJumping) {
+                isJumping = true;
+                player.velocity.y = jumpSpeed;
+                player.canJump = false;
+                
+                // Award points for jumping hills
+                score += 20;
+                updateUI();
+            }
+        }
+
+        // Check if player is on a hill
+        function isOnHill() {
+            for (const obstacle of obstacles) {
+                if (obstacle.type === 'hill') {
+                    const dx = Math.abs(player.position.x - obstacle.position.x);
+                    const dz = Math.abs(player.position.z - obstacle.position.z);
+                    
+                    if (dx < obstacle.width / 2 && dz < obstacle.depth / 2) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Handle window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Start the game
+        function startGame() {
+            gameActive = true;
+            startScreen.style.display = 'none';
+            score = 0;
+            papers = 20;
+            lives = 3;
+            updateUI();
+            clock.start();
+        }
+
+        // Restart the game
+        function restartGame() {
+            // Reset player position
+            player.position.set(0, playerHeight, 0);
+            playerObject.position.copy(player.position);
+            
+            // Reset game state
+            gameActive = true;
+            score = 0;
+            papers = 20;
+            lives = 3;
+            gameTime = 0;
+            playerInvincible = false;
+            
+            // Clear newspapers
+            for (const newspaper of newspapers) {
+                scene.remove(newspaper.object);
+            }
+            newspapers = [];
+            
+            // Update UI
+            updateUI();
+            gameOverScreen.style.display = 'none';
+            clock.start();
+        }
+
+        // Game over
+        function endGame() {
+            gameActive = false;
+            gameOverScreen.style.display = 'flex';
+            finalScoreElement.textContent = score;
+        }
+
+        // Update UI elements
+        function updateUI() {
+            scoreElement.textContent = score;
+            papersElement.textContent = papers;
+            livesElement.textContent = lives;
+        }
+
+        // Check collisions between player and obstacles
+        function checkObstacleCollisions() {
+            if (playerInvincible) return false;
+            
+            for (const obstacle of obstacles) {
+                if (obstacle.type === 'hill') continue; // Hills are not obstacles
+                
+                const dx = Math.abs(player.position.x - obstacle.position.x);
+                const dz = Math.abs(player.position.z - obstacle.position.z);
+                
+                if (dx < (player.width / 2 + obstacle.width / 2) * 0.7 &&
+                    dz < (player.depth / 2 + obstacle.depth / 2) * 0.7) {
+                    
+                    // Collision detected
+                    score -= 5;
+                    lives--;
+                    updateUI();
+                    
+                    // Make player invincible for a short time
+                    playerInvincible = true;
+                    playerInvincibleTime = 0;
+                    
+                    // Check game over
+                    if (lives <= 0) {
+                        endGame();
+                    }
+                    
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Check newspaper deliveries
+        function checkNewspaperDeliveries() {
+            for (const newspaper of newspapers) {
+                if (newspaper.delivered) continue;
+                
+                // Check mailbox deliveries
+                for (const mailbox of mailboxes) {
+                    const dx = Math.abs(newspaper.position.x - mailbox.position.x);
+                    const dz = Math.abs(newspaper.position.z - mailbox.position.z);
+                    
+                    if (dx < (mailbox.width / 2 + 0.2) &&
+                        dz < (mailbox.length / 2 + 0.2) &&
+                        newspaper.position.y < 1.5) {
+                        
+                        // Delivered to mailbox
+                        newspaper.delivered = true;
+                        score += 20;
+                        updateUI();
+                        break;
+                    }
+                }
+                
+                // Check porch deliveries
+                for (const porch of porches) {
+                    const dx = Math.abs(newspaper.position.x - porch.position.x);
+                    const dz = Math.abs(newspaper.position.z - porch.position.z);
+                    
+                    if (dx < (porch.width / 2 + 0.2) &&
+                        dz < (porch.length / 2 + 0.2) &&
+                        newspaper.position.y < 1) {
+                        
+                        // Delivered to porch
+                        newspaper.delivered = true;
+                        score += 10;
+                        updateUI();
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Update newspapers physics
+        function updateNewspapers(delta) {
+            for (let i = newspapers.length - 1; i >= 0; i--) {
+                const newspaper = newspapers[i];
+                
+                if (newspaper.thrown) {
+                    // Apply gravity
+                    newspaper.velocity.y -= 0.01;
+                    
+                    // Update position
+                    newspaper.position.x += newspaper.velocity.x;
+                    newspaper.position.y += newspaper.velocity.y;
+                    newspaper.position.z += newspaper.velocity.z;
+                    
+                    // Update object position
+                    newspaper.object.position.copy(newspaper.position);
+                    
+                    // Check if newspaper hit the ground
+                    if (newspaper.position.y <= 0.05) {
+                        newspaper.position.y = 0.05;
+                        newspaper.velocity.x *= 0.5;
+                        newspaper.velocity.z *= 0.5;
+                        newspaper.velocity.y = 0;
+                        newspaper.thrown = false;
+                    }
+                }
+                
+                // Remove old newspapers
+                if (!newspaper.thrown && !newspaper.delivered && gameTime > 30) {
+                    scene.remove(newspaper.object);
+                    newspapers.splice(i, 1);
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            deltaTime = clock.getDelta();
+            
+            if (gameActive) {
+                gameTime += deltaTime;
+                
+                // Update player position
+                if (!checkObstacleCollisions()) {
+                    player.position.x += player.velocity.x;
+                    player.position.z += player.velocity.z;
+                    
+                    // Limit player to road area
+                    player.position.x = Math.max(-15, Math.min(15, player.position.x));
+                }
+                
+                // Handle jumping
+                if (isJumping) {
+                    player.position.y += player.velocity.y;
+                    player.velocity.y -= 0.01;
+                    
+                    if (player.position.y <= playerHeight) {
+                        player.position.y = playerHeight;
+                        isJumping = false;
+                        player.velocity.y = 0;
+                        player.canJump = true;
+                    }
+                }
+                
+                // Update player object position
+                playerObject.position.copy(player.position);
+                
+                // Update camera position
+                camera.position.x = player.position.x * 0.5;
+                camera.position.z = player.position.z - 15;
+                camera.lookAt(player.position.x, player.position.y, player.position.z + 10);
+                
+                // Handle player invincibility
+                if (playerInvincible) {
+                    playerInvincibleTime += deltaTime;
+                    playerBlinkTime += deltaTime;
+                    
+                    // Blink effect
+                    if (playerBlinkTime > 0.1) {
+                        playerBlinkTime = 0;
+                        playerVisible = !playerVisible;
+                        playerObject.visible = playerVisible;
+                    }
+                    
+                    // End invincibility after 2 seconds
+                    if (playerInvincibleTime > 2) {
+                        playerInvincible = false;
+                        playerObject.visible = true;
+                    }
+                }
+                
+                // Update newspapers
+                updateNewspapers(deltaTime);
+                checkNewspaperDeliveries();
+                
+                // End game if out of papers and lives
+                if (papers <= 0 && newspapers.length === 0 && lives > 0) {
+                    endGame();
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // Initialize the game when the document is loaded
+        init();
+    </script>
+</body>
+</html>
