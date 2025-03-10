@@ -582,7 +582,17 @@
 
         // Create a block with houses
         function createHousesBlock(blockGroup) {
-    // Create street
+    // Create base grass plane for entire block
+    const grassBase = new THREE.Mesh(
+        new THREE.PlaneGeometry(blockWidth + streetWidth * 4, blockLength), // Wide enough to cover entire area
+        new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
+    );
+    grassBase.rotation.x = -Math.PI / 2;
+    grassBase.position.set(0, -0.02, blockLength / 2);
+    grassBase.receiveShadow = true;
+    blockGroup.add(grassBase);
+    
+    // Create street on top of grass
     const street = new THREE.Mesh(
         new THREE.PlaneGeometry(blockWidth + streetWidth * 2, blockLength),
         new THREE.MeshLambertMaterial({ color: COLORS.STREET })
@@ -592,7 +602,7 @@
     street.receiveShadow = true;
     blockGroup.add(street);
     
-    // Create sidewalks with slight y-offset
+    // Create sidewalks on top of grass
     const leftSidewalk = new THREE.Mesh(
         new THREE.PlaneGeometry(3, blockLength),
         new THREE.MeshLambertMaterial({ color: COLORS.SIDEWALK })
@@ -610,25 +620,6 @@
     rightSidewalk.position.set((blockWidth / 2) + 4, 0.01, blockLength / 2);
     rightSidewalk.receiveShadow = true;
     blockGroup.add(rightSidewalk);
-    
-    // Create continuous grass strips
-    const leftGrassFront = new THREE.Mesh(
-        new THREE.PlaneGeometry(4, blockLength),
-        new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
-    );
-    leftGrassFront.rotation.x = -Math.PI / 2;
-    leftGrassFront.position.set(-(blockWidth / 2) - 6, -0.02, blockLength / 2);
-    leftGrassFront.receiveShadow = true;
-    blockGroup.add(leftGrassFront);
-
-    const rightGrassFront = new THREE.Mesh(
-        new THREE.PlaneGeometry(4, blockLength),
-        new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
-    );
-    rightGrassFront.rotation.x = -Math.PI / 2;
-    rightGrassFront.position.set((blockWidth / 2) + 6, -0.02, blockLength / 2);
-    rightGrassFront.receiveShadow = true;
-    blockGroup.add(rightGrassFront);
     
     // Create houses (4 on each side)
     const houseWidth = 6;
@@ -657,25 +648,6 @@
             houseLength,
             false
         );
-
-        // Add side grass patches for each house
-        const leftGrassSide = new THREE.Mesh(
-            new THREE.PlaneGeometry(4, houseLength),
-            new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
-        );
-        leftGrassSide.rotation.x = -Math.PI / 2;
-        leftGrassSide.position.set(-(blockWidth / 2) - 14, -0.02, houseZ);
-        leftGrassSide.receiveShadow = true;
-        blockGroup.add(leftGrassSide);
-
-        const rightGrassSide = new THREE.Mesh(
-            new THREE.PlaneGeometry(4, houseLength),
-            new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
-        );
-        rightGrassSide.rotation.x = -Math.PI / 2;
-        rightGrassSide.position.set((blockWidth / 2) + 14, -0.02, houseZ);
-        rightGrassSide.receiveShadow = true;
-        blockGroup.add(rightGrassSide);
     }
     
     // Add obstacles
