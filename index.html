@@ -461,74 +461,66 @@
 
         function createHouse(blockGroup, x, z, width, length, isLeftSide) {
             const houseGroup = new THREE.Group();
-            const setback = 6; // Increased setback from street
+            const setback = 6; // Distance from street
             
-            // Create driveway
-            const driveway = new THREE.Mesh(
-                new THREE.PlaneGeometry(3, setback),
-                new THREE.MeshLambertMaterial({ color: 0x999999 })
-            );
-            driveway.rotation.x = -Math.PI / 2;
-            driveway.position.set(0, 0.01, length/2 - setback/2);
-            driveway.receiveShadow = true;
-            houseGroup.add(driveway);
-
-            // House base
+            // House base - set back from street
             const base = new THREE.Mesh(
                 new THREE.BoxGeometry(width, 2, length),
                 new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_WALL })
             );
-            base.position.set(0, 1, 0);
+            base.position.set(0, 1, -setback);
             base.castShadow = true;
             houseGroup.add(base);
-            
-            // Front wall collision
-            const frontCollision = new THREE.Mesh(
-                new THREE.BoxGeometry(width, 3, 0.5),
-                new THREE.MeshBasicMaterial({ visible: false })
-            );
-            frontCollision.position.set(0, 1.5, length/2);
-            frontCollision.userData.type = 'wall';
-            houseGroup.add(frontCollision);
 
             // Roof
             const roof = new THREE.Mesh(
                 new THREE.ConeGeometry(width * 0.7, 1.5, 4),
                 new THREE.MeshLambertMaterial({ color: COLORS.HOUSE_ROOF })
             );
-            roof.position.set(0, 2.75, 0);
+            roof.position.set(0, 2.75, -setback);
             roof.rotation.y = Math.PI / 4;
             roof.castShadow = true;
             houseGroup.add(roof);
 
-            // Porch at front of house
+            // Porch facing street
             const porch = new THREE.Mesh(
                 new THREE.BoxGeometry(3, 0.2, 2),
                 new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
             );
-            porch.position.set(0, 0.1, length/2 + 1);
+            porch.position.set(0, 0.1, -setback + length/2 + 1);
             porch.receiveShadow = true;
             porch.userData.type = 'porch';
             houseGroup.add(porch);
 
-            // Porch steps
-            const steps = new THREE.Mesh(
-                new THREE.BoxGeometry(2, 0.4, 0.8),
-                new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
+            // Driveway
+            const driveway = new THREE.Mesh(
+                new THREE.PlaneGeometry(3, setback),
+                new THREE.MeshLambertMaterial({ color: 0x999999 })
             );
-            steps.position.set(0, 0.2, length/2 + 2);
-            steps.receiveShadow = true;
-            houseGroup.add(steps);
+            driveway.rotation.x = -Math.PI / 2;
+            driveway.position.set(0, 0.01, -setback/2);
+            driveway.receiveShadow = true;
+            houseGroup.add(driveway);
 
-            // Position house with setback
-            houseGroup.position.set(x, 0, z - setback);
+            // Add mailbox at front corner near street
+            const mailboxX = isLeftSide ? width/2 + 0.5 : -width/2 - 0.5;
+            const mailboxZ = length/2; // Always at front near street
+            createMailbox(blockGroup, x + mailboxX, z + mailboxZ);
+
+            // Position the entire house group
+            houseGroup.position.set(x, 0, z);
             blockGroup.add(houseGroup);
 
-            // Add mailbox consistently at street edge near driveway
-            const mailboxX = isLeftSide ? x + width/2 + 0.5 : x - width/2 - 0.5;
-            createMailbox(blockGroup, mailboxX, z + length/2 - 1); // Near street
+            // Add collision mesh for house front
+            const wallCollision = new THREE.Mesh(
+                new THREE.BoxGeometry(width, 3, 0.5),
+                new THREE.MeshBasicMaterial({ visible: false })
+            );
+            wallCollision.position.set(x, 1.5, z - setback + length/2);
+            wallCollision.userData.type = 'wall';
+            blockGroup.add(wallCollision);
 
-            // Add porch to deliverable locations
+            // Register porch for delivery
             porches.push({
                 position: new THREE.Vector3(x, 0.2, z - setback + length/2 + 1 + blockGroup.position.z),
                 width: 3,
@@ -601,7 +593,7 @@
                     houseZ,
                     houseWidth,
                     houseLength,
-                    Math.random() > 0.5 // Random side for mailbox
+                    true  // is left side
                 );
                 
                 // Right side house
@@ -611,7 +603,7 @@
                     houseZ,
                     houseWidth,
                     houseLength,
-                    Math.random() > 0.5 // Random side for mailbox
+                    false  // is right side
                 );
             }
             
@@ -1615,16 +1607,12 @@
                 const newspaper = newspapers[i];
                 
                 if (newspaper.thrown && !newspaper.delivered) {
-                    // Apply gravity
-                    newspaper.velocity.y -= 0.015;
-                    
-                    // Store previous position
+                    // Store previous position for collision detection
                     const prevPos = newspaper.position.clone();
                     
-                    // Update position
-                    newspaper.position.x += newspaper.velocity.x;
-                    newspaper.position.y += newspaper.velocity.y;
-                    newspaper.position.z += newspaper.velocity.z;
+                    // Apply gravity and update position
+                    newspaper.velocity.y -= 0.015;
+                    newspaper.position.add(newspaper.velocity);
                     
                     // Check wall collisions
                     const walls = scene.children.filter(obj => 
@@ -1632,36 +1620,40 @@
                     for (const wall of walls) {
                         const bbox = new THREE.Box3().setFromObject(wall);
                         if (bbox.containsPoint(newspaper.position)) {
-                            newspaper.thrown = false;
                             newspaper.position.copy(prevPos);
+                            newspaper.thrown = false;
                             break;
                         }
                     }
-
-                    // Check mailbox deliveries
+                    
+                    // Check mailbox deliveries with more generous bounds
                     for (const mailbox of mailboxes) {
                         const dx = Math.abs(newspaper.position.x - mailbox.position.x);
                         const dz = Math.abs(newspaper.position.z - mailbox.position.z);
                         const dy = Math.abs(newspaper.position.y - 1.2);
                         
-                        if (dx < 0.5 && dz < 0.5 && dy < 0.5) {
-                            newspaper.thrown = false;
+                        if (dx < 0.75 && dz < 0.75 && dy < 1.0) {
                             newspaper.delivered = true;
+                            newspaper.thrown = false;
+                            newspaper.velocity.set(0, 0, 0);
+                            newspaper.position.y = 1.2;
                             score += 20;
                             updateUI();
                             break;
                         }
                     }
                     
-                    // Check porch deliveries
+                    // Check porch deliveries with more generous bounds
                     for (const porch of porches) {
                         const dx = Math.abs(newspaper.position.x - porch.position.x);
                         const dz = Math.abs(newspaper.position.z - porch.position.z);
                         
-                        if (dx < porch.width/2 && dz < porch.length/2 && 
+                        if (dx < porch.width && dz < porch.length && 
                             newspaper.position.y < 0.5) {
-                            newspaper.thrown = false;
                             newspaper.delivered = true;
+                            newspaper.thrown = false;
+                            newspaper.velocity.set(0, 0, 0);
+                            newspaper.position.y = 0.2;
                             score += 10;
                             updateUI();
                             break;
@@ -1672,9 +1664,9 @@
                     if (newspaper.position.y <= 0.05) {
                         newspaper.position.y = 0.05;
                         newspaper.thrown = false;
+                        newspaper.velocity.set(0, 0, 0);
                     }
                     
-                    // Update visual position
                     newspaper.object.position.copy(newspaper.position);
                 }
                 
