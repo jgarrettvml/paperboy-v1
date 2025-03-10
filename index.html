@@ -519,7 +519,8 @@
             // Position the entire house group
             houseGroup.position.set(x, 0, z);
             // Rotate to face street
-            houseGroup.rotation.y = isLeftSide ? -Math.PI/2 : Math.PI/2;
+            houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
+            
             blockGroup.add(houseGroup);
             
             // Add mailbox at consistent position near street
