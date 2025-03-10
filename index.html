@@ -499,6 +499,8 @@
                 new THREE.BoxGeometry(3, 0.2, 2),
                 new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
             );
+            porch.userData.type = 'porch';
+            
             porch.position.set(0, 0.1, -setback + length/2 + 1);
             porch.receiveShadow = true;
             houseGroup.add(porch);
@@ -619,6 +621,7 @@
         // Create a mailbox with more detail
         function createMailbox(blockGroup, x, z) {
             const mailboxGroup = new THREE.Group();
+            mailboxGroup.userData.type = 'mailbox';
             
             // Random mailbox style (0, 1, or 2)
             const mailboxStyle = Math.floor(Math.random() * 3);
@@ -1329,7 +1332,7 @@
             });
         }
 
-        // Create a newspaper with improved physics
+        // Create a newspaper with simple physics
         function createNewspaper(x, y, z, velocityX, velocityZ) {
             if (papers <= 0) return;
             
@@ -1344,14 +1347,14 @@
             newspaper.castShadow = true;
             scene.add(newspaper);
             
+            // Create a raycaster for collision detection
+            const raycaster = new THREE.Raycaster();
+            
             newspapers.push({
                 object: newspaper,
-                velocity: new THREE.Vector3(
-                    velocityX * 1.2,    
-                    0.25,              
-                    velocityZ * 1.2     
-                ),
+                velocity: new THREE.Vector3(velocityX, 0.2, velocityZ),
                 position: newspaper.position.clone(),
+                raycaster: raycaster,
                 thrown: true,
                 delivered: false
             });
@@ -1602,138 +1605,71 @@
 
         // Update newspapers with improved collision detection
         function updateNewspapers(delta) {
-            for (let i = newspapers.length - 1; i >= 0; i--) {
-                const newspaper = newspapers[i];
+        for (let i = newspapers.length - 1; i >= 0; i--) {
+            const newspaper = newspapers[i];
+            
+            if (newspaper.thrown && !newspaper.delivered) {
+                // Store current position
+                const oldPosition = newspaper.position.clone();
                 
-                if (newspaper.thrown && !newspaper.delivered) {
-                    // Store previous position for collision checking
-                    const prevPosition = newspaper.position.clone();
+                // Apply simple gravity
+                newspaper.velocity.y -= 0.01;
+                
+                // Update position
+                const newPosition = newspaper.position.clone();
+                newPosition.x += newspaper.velocity.x;
+                newPosition.y += newspaper.velocity.y;
+                newPosition.z += newspaper.velocity.z;
+                
+                // Cast a ray from current position to next position
+                newspaper.raycaster.set(oldPosition, newPosition.clone().sub(oldPosition).normalize());
+                
+                // Get all intersecting objects along the path
+                const intersects = newspaper.raycaster.intersectObjects(scene.children, true);
+                
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    // Stop at the intersection point
+                    newspaper.position.copy(hit.point);
+                    newspaper.thrown = false;
                     
-                    // Apply gravity
-                    newspaper.velocity.y -= 0.015;
-                    
-                    // Update position
-                    newspaper.position.x += newspaper.velocity.x;
-                    newspaper.position.y += newspaper.velocity.y;
-                    newspaper.position.z += newspaper.velocity.z;
-                    
-                    // Check for mailbox collisions first (they're higher priority)
-                    for (const mailbox of mailboxes) {
-                        // Create a collision box around the mailbox
-                        const mailboxBounds = {
-                            minX: mailbox.position.x - 0.5,
-                            maxX: mailbox.position.x + 0.5,
-                            minY: 0.8, // Bottom of mailbox
-                            maxY: 1.6, // Top of mailbox
-                            minZ: mailbox.position.z - 0.5,
-                            maxZ: mailbox.position.z + 0.5
-                        };
-                        
-                        // Check if newspaper is within mailbox bounds
-                        if (newspaper.position.x >= mailboxBounds.minX && 
-                            newspaper.position.x <= mailboxBounds.maxX &&
-                            newspaper.position.y >= mailboxBounds.minY && 
-                            newspaper.position.y <= mailboxBounds.maxY &&
-                            newspaper.position.z >= mailboxBounds.minZ && 
-                            newspaper.position.z <= mailboxBounds.maxZ) {
-                            
-                            // Hit mailbox
-                            newspaper.thrown = false;
-                            newspaper.delivered = true;
-                            newspaper.velocity.set(0, 0, 0);
-                            newspaper.position.y = 1.2; // Rest on mailbox
-                            score += 20;
-                            updateUI();
-                            break;
-                        }
+                    // Check what was hit
+                    let parent = hit.object;
+                    while (parent.parent && !parent.userData.type) {
+                        parent = parent.parent;
                     }
                     
-                    // If not delivered to mailbox, check porch
-                    if (!newspaper.delivered) {
-                        for (const porch of porches) {
-                            // Create a collision box around the porch
-                            const porchBounds = {
-                                minX: porch.position.x - porch.width/2,
-                                maxX: porch.position.x + porch.width/2,
-                                minY: 0,
-                                maxY: 0.5, // Height of porch
-                                minZ: porch.position.z - porch.length/2,
-                                maxZ: porch.position.z + porch.length/2
-                            };
-                            
-                            // Check if newspaper is within porch bounds
-                            if (newspaper.position.x >= porchBounds.minX && 
-                                newspaper.position.x <= porchBounds.maxX &&
-                                newspaper.position.y >= porchBounds.minY && 
-                                newspaper.position.y <= porchBounds.maxY &&
-                                newspaper.position.z >= porchBounds.minZ && 
-                                newspaper.position.z <= porchBounds.maxZ) {
-                                
-                                // Hit porch
-                                newspaper.thrown = false;
-                                newspaper.delivered = true;
-                                newspaper.velocity.set(0, 0, 0);
-                                newspaper.position.y = 0.2; // Rest on porch
-                                score += 10;
-                                updateUI();
-                                break;
-                            }
-                        }
+                    if (parent.userData.type === 'mailbox') {
+                        newspaper.delivered = true;
+                        score += 20;
+                        updateUI();
+                    } else if (parent.userData.type === 'porch') {
+                        newspaper.delivered = true;
+                        score += 10;
+                        updateUI();
                     }
-                    
-                    // Check for house collisions (if not delivered)
-                    if (!newspaper.delivered) {
-                        // Get all house obstacles
-                        const houseObstacles = obstacles.filter(obs => 
-                            obs.type === 'house' || obs.type === 'wall');
-                        
-                        for (const house of houseObstacles) {
-                            // Create a collision box around the house
-                            const houseBounds = {
-                                minX: house.position.x - house.width/2,
-                                maxX: house.position.x + house.width/2,
-                                minY: 0,
-                                maxY: house.height,
-                                minZ: house.position.z - house.depth/2,
-                                maxZ: house.position.z + house.depth/2
-                            };
-                            
-                            // Check if newspaper hits house
-                            if (newspaper.position.x >= houseBounds.minX && 
-                                newspaper.position.x <= houseBounds.maxX &&
-                                newspaper.position.y >= houseBounds.minY && 
-                                newspaper.position.y <= houseBounds.maxY &&
-                                newspaper.position.z >= houseBounds.minZ && 
-                                newspaper.position.z <= houseBounds.maxZ) {
-                                
-                                // Hit house - bounce back slightly
-                                newspaper.thrown = false;
-                                newspaper.velocity.set(0, 0, 0);
-                                newspaper.position.copy(prevPosition);
-                                newspaper.position.y = Math.max(0.05, newspaper.position.y);
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // Update object position
-                    newspaper.object.position.copy(newspaper.position);
+                } else {
+                    // No collision, update position
+                    newspaper.position.copy(newPosition);
                     
                     // Ground collision
-                    if (newspaper.position.y <= 0.05 && !newspaper.delivered) {
+                    if (newspaper.position.y <= 0.05) {
                         newspaper.position.y = 0.05;
                         newspaper.thrown = false;
-                        newspaper.velocity.set(0, 0, 0);
                     }
                 }
                 
-                // Remove old undelivered newspapers
-                if (!newspaper.thrown && !newspaper.delivered && gameTime > 30) {
-                    scene.remove(newspaper.object);
-                    newspapers.splice(i, 1);
-                }
+                // Update visual position
+                newspaper.object.position.copy(newspaper.position);
+            }
+            
+            // Remove old undelivered papers
+            if (!newspaper.thrown && !newspaper.delivered && gameTime > 30) {
+                scene.remove(newspaper.object);
+                newspapers.splice(i, 1);
             }
         }
+    }
 
         // Animation loop
         function animate() {
