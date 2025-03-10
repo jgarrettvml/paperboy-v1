@@ -254,18 +254,20 @@
             bikeFrame.position.y = 0.5;
             playerObject.add(bikeFrame);
 
-            // Wheels
+            // Wheels - rotated to be vertical
             const wheelGeometry = new THREE.TorusGeometry(0.5, 0.1, 16, 16);
             const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
             
             const frontWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
             frontWheel.position.set(0, 0.5, -0.6);
-            frontWheel.rotation.x = Math.PI / 2;
+            // Changed rotation to make wheel vertical
+            frontWheel.rotation.y = Math.PI / 2;
             playerObject.add(frontWheel);
             
             const backWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
             backWheel.position.set(0, 0.5, 0.6);
-            backWheel.rotation.x = Math.PI / 2;
+            // Changed rotation to make wheel vertical
+            backWheel.rotation.y = Math.PI / 2;
             playerObject.add(backWheel);
 
             // Rider
@@ -291,13 +293,11 @@
             newspaperBag.position.set(0, 1.2, 0.5);
             playerObject.add(newspaperBag);
 
-            // Add player to scene
             playerObject.position.set(0, playerHeight, 0);
             playerObject.castShadow = true;
             playerObject.receiveShadow = true;
             scene.add(playerObject);
 
-            // Set player
             player = {
                 object: playerObject,
                 width: 1,
@@ -461,8 +461,18 @@
 
         function createHouse(blockGroup, x, z, width, length, isLeftSide) {
             const houseGroup = new THREE.Group();
-            const setback = 6; // Distance from street
+            const setback = 8; // Increased setback from street
             
+            // Create driveway from sidewalk to house
+            const driveway = new THREE.Mesh(
+                new THREE.PlaneGeometry(3, setback - 2), // Shortened to meet sidewalk
+                new THREE.MeshLambertMaterial({ color: 0x999999 })
+            );
+            driveway.rotation.x = -Math.PI / 2;
+            driveway.position.set(0, 0.01, -setback/2 + 1); // Adjusted to meet sidewalk
+            driveway.receiveShadow = true;
+            houseGroup.add(driveway);
+
             // House base - set back from street
             const base = new THREE.Mesh(
                 new THREE.BoxGeometry(width, 2, length),
@@ -482,32 +492,31 @@
             roof.castShadow = true;
             houseGroup.add(roof);
 
-            // Porch facing street
+            // Front porch facing street
             const porch = new THREE.Mesh(
                 new THREE.BoxGeometry(3, 0.2, 2),
                 new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
             );
+            // Position porch at front of house
             porch.position.set(0, 0.1, -setback + length/2 + 1);
             porch.receiveShadow = true;
             porch.userData.type = 'porch';
             houseGroup.add(porch);
 
-            // Driveway
-            const driveway = new THREE.Mesh(
-                new THREE.PlaneGeometry(3, setback),
-                new THREE.MeshLambertMaterial({ color: 0x999999 })
+            // Porch steps
+            const steps = new THREE.Mesh(
+                new THREE.BoxGeometry(2, 0.4, 0.8),
+                new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
             );
-            driveway.rotation.x = -Math.PI / 2;
-            driveway.position.set(0, 0.01, -setback/2);
-            driveway.receiveShadow = true;
-            houseGroup.add(driveway);
+            steps.position.set(0, 0.2, -setback + length/2 + 2);
+            steps.receiveShadow = true;
+            houseGroup.add(steps);
 
-            // Add mailbox at front corner near street
+            // Add mailbox at street edge
             const mailboxX = isLeftSide ? width/2 + 0.5 : -width/2 - 0.5;
-            const mailboxZ = length/2; // Always at front near street
-            createMailbox(blockGroup, x + mailboxX, z + mailboxZ);
+            createMailbox(blockGroup, x + mailboxX, z + length/2);
 
-            // Position the entire house group
+            // Position house group
             houseGroup.position.set(x, 0, z);
             blockGroup.add(houseGroup);
 
@@ -540,22 +549,22 @@
             street.receiveShadow = true;
             blockGroup.add(street);
             
-            // Create sidewalks
+            // Create continuous sidewalks
             const leftSidewalk = new THREE.Mesh(
-                new THREE.PlaneGeometry(2, blockLength),
+                new THREE.PlaneGeometry(3, blockLength),
                 new THREE.MeshLambertMaterial({ color: COLORS.SIDEWALK })
             );
             leftSidewalk.rotation.x = -Math.PI / 2;
-            leftSidewalk.position.set(-(blockWidth / 2) - 1, 0.05, blockLength / 2);
+            leftSidewalk.position.set(-(blockWidth / 2) - 4, 0.05, blockLength / 2);
             leftSidewalk.receiveShadow = true;
             blockGroup.add(leftSidewalk);
             
             const rightSidewalk = new THREE.Mesh(
-                new THREE.PlaneGeometry(2, blockLength),
+                new THREE.PlaneGeometry(3, blockLength),
                 new THREE.MeshLambertMaterial({ color: COLORS.SIDEWALK })
             );
             rightSidewalk.rotation.x = -Math.PI / 2;
-            rightSidewalk.position.set((blockWidth / 2) + 1, 0.05, blockLength / 2);
+            rightSidewalk.position.set((blockWidth / 2) + 4, 0.05, blockLength / 2);
             rightSidewalk.receiveShadow = true;
             blockGroup.add(rightSidewalk);
             
@@ -565,7 +574,7 @@
                 new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
             );
             leftLawn.rotation.x = -Math.PI / 2;
-            leftLawn.position.set(-(blockWidth / 2) - 6, 0.05, blockLength / 2);
+            leftLawn.position.set(-(blockWidth / 2) - 8, 0.05, blockLength / 2);
             leftLawn.receiveShadow = true;
             blockGroup.add(leftLawn);
             
@@ -574,7 +583,7 @@
                 new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
             );
             rightLawn.rotation.x = -Math.PI / 2;
-            rightLawn.position.set((blockWidth / 2) + 6, 0.05, blockLength / 2);
+            rightLawn.position.set((blockWidth / 2) + 8, 0.05, blockLength / 2);
             rightLawn.receiveShadow = true;
             blockGroup.add(rightLawn);
             
@@ -589,7 +598,7 @@
                 // Left side house
                 createHouse(
                     blockGroup, 
-                    -(blockWidth / 2) - 6 + (houseWidth / 2), 
+                    -(blockWidth / 2) - 8 + (houseWidth / 2), 
                     houseZ,
                     houseWidth,
                     houseLength,
@@ -599,7 +608,7 @@
                 // Right side house
                 createHouse(
                     blockGroup, 
-                    (blockWidth / 2) + 6 - (houseWidth / 2), 
+                    (blockWidth / 2) + 8 - (houseWidth / 2), 
                     houseZ,
                     houseWidth,
                     houseLength,
@@ -607,7 +616,7 @@
                 );
             }
             
-            // Add obstacles
+            // Add obstacles (cars and drains)
             addObstacles(blockGroup);
         }
 
