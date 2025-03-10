@@ -495,7 +495,7 @@
     // Porch steps
     const steps = new THREE.Mesh(
         new THREE.BoxGeometry(2, 0.4, 1),
-        new THREE.MeshLambertMaterial({ color: STEPS_COLOR })
+        new THREE.MeshLambertMaterial({ color: COLORS.PORCH })  // Fixed from STEPS_COLOR to COLORS.PORCH
     );
     steps.position.set(0, 0.2, baseLength/2 + 1.5);
     steps.receiveShadow = true;
