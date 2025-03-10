@@ -511,18 +511,20 @@
             houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
             blockGroup.add(houseGroup);
 
-            // Add driveway - from side of house to street
+            // Add driveway from garage to street
+            const drivewayLength = 8;  // Length from house to street
+            const drivewayWidth = 3;   // Standard driveway width
             const driveway = new THREE.Mesh(
-                new THREE.PlaneGeometry(3, 8), // 3 units wide, 8 units long to reach street
+                new THREE.PlaneGeometry(drivewayWidth, drivewayLength),
                 new THREE.MeshLambertMaterial({ color: 0x999999 })
             );
             driveway.rotation.x = -Math.PI / 2;
             
-            // Position driveway to run from house side to street
+            // Position driveway to start at garage and extend to street
             const driveX = isLeftSide ? 
-                x + (baseWidth/2 + 1.5) : // Left houses - driveway on right side
-                x - (baseWidth/2 + 1.5);  // Right houses - driveway on left side
-            driveway.position.set(driveX, 0, z);
+                x + baseWidth/2 : // Left houses - driveway starts at right edge
+                x - baseWidth/2;  // Right houses - driveway starts at left edge
+            driveway.position.set(driveX, -0.01, z + drivewayLength/2 - 2); // Adjusted z position
             driveway.receiveShadow = true;
             blockGroup.add(driveway);
             
@@ -584,30 +586,38 @@
             rightSidewalk.receiveShadow = true;
             blockGroup.add(rightSidewalk);
             
-            // Create grass lawns between sidewalk and houses
-            const leftGrass = new THREE.Mesh(
-                new THREE.PlaneGeometry(6, blockLength),
-                new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
-            );
-            leftGrass.rotation.x = -Math.PI / 2;
-            leftGrass.position.set(-(blockWidth / 2) - 7, -0.01, blockLength / 2);
-            leftGrass.receiveShadow = true;
-            blockGroup.add(leftGrass);
-            
-            const rightGrass = new THREE.Mesh(
-                new THREE.PlaneGeometry(6, blockLength),
-                new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
-            );
-            rightGrass.rotation.x = -Math.PI / 2;
-            rightGrass.position.set((blockWidth / 2) + 7, -0.01, blockLength / 2);
-            rightGrass.receiveShadow = true;
-            blockGroup.add(rightGrass);
-            
-            // Create houses (4 on each side)
+            // Create grass patches between each house
+            const grassPatchWidth = 3;
             const houseWidth = 6;
             const houseLength = 8;
             const houseSpacing = (blockLength - (houseLength * 4)) / 5;
+
+            for (let i = 0; i < 5; i++) {  // 5 grass patches (between and around 4 houses)
+                const grassZ = i * (houseLength + houseSpacing);
+                const grassLength = houseSpacing;
+
+                // Left side grass
+                const leftGrass = new THREE.Mesh(
+                    new THREE.PlaneGeometry(grassPatchWidth, grassLength),
+                    new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
+                );
+                leftGrass.rotation.x = -Math.PI / 2;
+                leftGrass.position.set(-(blockWidth / 2) - 7, -0.02, grassZ + grassLength/2);
+                leftGrass.receiveShadow = true;
+                blockGroup.add(leftGrass);
+
+                // Right side grass
+                const rightGrass = new THREE.Mesh(
+                    new THREE.PlaneGeometry(grassPatchWidth, grassLength),
+                    new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
+                );
+                rightGrass.rotation.x = -Math.PI / 2;
+                rightGrass.position.set((blockWidth / 2) + 7, -0.02, grassZ + grassLength/2);
+                rightGrass.receiveShadow = true;
+                blockGroup.add(rightGrass);
+            }
             
+            // Create houses (4 on each side)
             for (let i = 0; i < 4; i++) {
                 const houseZ = houseSpacing + i * (houseLength + houseSpacing);
                 
