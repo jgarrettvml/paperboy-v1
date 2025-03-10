@@ -582,9 +582,9 @@
 
         // Create a block with houses
         function createHousesBlock(blockGroup) {
-    // Create base grass plane for entire block
+    // Create base grass plane for entire block - extended to cover more area
     const grassBase = new THREE.Mesh(
-        new THREE.PlaneGeometry(blockWidth + streetWidth * 4, blockLength), // Wide enough to cover entire area
+        new THREE.PlaneGeometry(blockWidth * 2 + streetWidth * 4, blockLength), // Much wider to cover both sides
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
     grassBase.rotation.x = -Math.PI / 2;
