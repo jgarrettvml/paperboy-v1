@@ -1329,7 +1329,7 @@
             });
         }
 
-        // Create a newspaper
+        // Create a newspaper with improved physics
         function createNewspaper(x, y, z, velocityX, velocityZ) {
             if (papers <= 0) return;
             
@@ -1344,9 +1344,14 @@
             newspaper.castShadow = true;
             scene.add(newspaper);
             
+            // Adjust initial velocity and add more gravity
             newspapers.push({
                 object: newspaper,
-                velocity: new THREE.Vector3(velocityX, 0.2, velocityZ),
+                velocity: new THREE.Vector3(
+                    velocityX * 1.5,    // Slightly stronger horizontal velocity
+                    0.3,               // Higher initial upward velocity
+                    velocityZ * 1.5     // Slightly stronger forward velocity
+                ),
                 position: newspaper.position.clone(),
                 thrown: true,
                 delivered: false
@@ -1596,14 +1601,14 @@
             }
         }
 
-        // Update newspapers physics
+        // Update newspapers with improved physics and collision
         function updateNewspapers(delta) {
             for (let i = newspapers.length - 1; i >= 0; i--) {
                 const newspaper = newspapers[i];
                 
-                if (newspaper.thrown) {
-                    // Apply gravity
-                    newspaper.velocity.y -= 0.01;
+                if (newspaper.thrown && !newspaper.delivered) {
+                    // Apply stronger gravity
+                    newspaper.velocity.y -= 0.015; // Increased gravity effect
                     
                     // Update position
                     newspaper.position.x += newspaper.velocity.x;
@@ -1613,17 +1618,53 @@
                     // Update object position
                     newspaper.object.position.copy(newspaper.position);
                     
-                    // Check if newspaper hit the ground
-                    if (newspaper.position.y <= 0.05) {
+                    // Check for mailbox collisions
+                    for (const mailbox of mailboxes) {
+                        const dx = Math.abs(newspaper.position.x - mailbox.position.x);
+                        const dz = Math.abs(newspaper.position.z - mailbox.position.z);
+                        const dy = Math.abs(newspaper.position.y - 1.2); // Mailbox height
+                        
+                        if (dx < 0.5 && dz < 0.5 && dy < 0.5) {
+                            // Hit mailbox - stop the newspaper
+                            newspaper.thrown = false;
+                            newspaper.delivered = true;
+                            newspaper.velocity.set(0, 0, 0);
+                            newspaper.position.y = 1.2; // Set to mailbox height
+                            newspaper.object.position.copy(newspaper.position);
+                            score += 20;
+                            updateUI();
+                            break;
+                        }
+                    }
+                    
+                    // Check for porch collisions
+                    for (const porch of porches) {
+                        const dx = Math.abs(newspaper.position.x - porch.position.x);
+                        const dz = Math.abs(newspaper.position.z - porch.position.z);
+                        
+                        if (dx < porch.width/2 && dz < porch.length/2 && newspaper.position.y <= 0.3) {
+                            // Hit porch - stop the newspaper
+                            newspaper.thrown = false;
+                            newspaper.delivered = true;
+                            newspaper.velocity.set(0, 0, 0);
+                            newspaper.position.y = 0.2; // Rest on porch
+                            newspaper.object.position.copy(newspaper.position);
+                            score += 10;
+                            updateUI();
+                            break;
+                        }
+                    }
+                    
+                    // Ground collision
+                    if (newspaper.position.y <= 0.05 && !newspaper.delivered) {
                         newspaper.position.y = 0.05;
-                        newspaper.velocity.x *= 0.5;
-                        newspaper.velocity.z *= 0.5;
-                        newspaper.velocity.y = 0;
                         newspaper.thrown = false;
+                        newspaper.velocity.set(0, 0, 0);
+                        newspaper.object.position.copy(newspaper.position);
                     }
                 }
                 
-                // Remove old newspapers
+                // Remove old undelivered newspapers
                 if (!newspaper.thrown && !newspaper.delivered && gameTime > 30) {
                     scene.remove(newspaper.object);
                     newspapers.splice(i, 1);
