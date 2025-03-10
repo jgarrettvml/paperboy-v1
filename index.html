@@ -506,26 +506,28 @@
             houseGroup.add(porch);
             houseGroup.add(steps);
             
-            // Driveway
+            // Position the entire house group
+            houseGroup.position.set(x, 0, z);
+            // Rotate to face street (rotated 180 degrees from previous)
+            houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
+            blockGroup.add(houseGroup);
+
+            // Driveway - now added to blockGroup instead of houseGroup to avoid rotation
             const driveway = new THREE.Mesh(
-                new THREE.PlaneGeometry(3, length + 2),
+                new THREE.PlaneGeometry(3, 12), // Extended length to reach street
                 new THREE.MeshLambertMaterial({ color: 0x999999 })
             );
             driveway.rotation.x = -Math.PI / 2;
-            driveway.position.set(isLeftSide ? -baseWidth/2 - 1 : baseWidth/2 + 1, 0.02, baseLength/2);
+            // Position driveway relative to house but directly in blockGroup
+            const driveX = x + (isLeftSide ? -baseWidth/2 - 1 : baseWidth/2 + 1);
+            driveway.position.set(driveX, 0.01, z); // Slight y-offset to prevent z-fighting
             driveway.receiveShadow = true;
-            houseGroup.add(driveway);
+            blockGroup.add(driveway);
             
-            // Position the entire house group
-            houseGroup.position.set(x, 0, z);
-            // Rotate to face street
-            houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
-            
-            blockGroup.add(houseGroup);
-            
-            // Add mailbox at consistent position near street
-            const mailboxOffset = isLeftSide ? -3 : 3;
-            createMailbox(blockGroup, x + mailboxOffset, z + length/2);
+            // Add mailbox near sidewalk - not rotated with house
+            const mailboxX = x + (isLeftSide ? -baseWidth/2 - 2 : baseWidth/2 + 2);
+            const mailboxZ = z + 4; // Near the street
+            createMailbox(blockGroup, mailboxX, mailboxZ);
             
             // Add collision mesh for house front
             const wallCollision = new THREE.Mesh(
@@ -533,7 +535,7 @@
                 new THREE.MeshBasicMaterial({ visible: false })
             );
             wallCollision.position.set(x + (isLeftSide ? length/2 : -length/2), 1.5, z);
-            wallCollision.rotation.y = isLeftSide ? -Math.PI/2 : Math.PI/2;
+            wallCollision.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
             wallCollision.userData.type = 'wall';
             blockGroup.add(wallCollision);
             
