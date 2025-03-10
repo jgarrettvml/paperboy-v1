@@ -495,7 +495,7 @@
     // Porch steps
     const steps = new THREE.Mesh(
         new THREE.BoxGeometry(2, 0.4, 1),
-        new THREE.MeshLambertMaterial({ color: COLORS.PORCH })  // Fixed from STEPS_COLOR to COLORS.PORCH
+        new THREE.MeshLambertMaterial({ color: COLORS.PORCH })
     );
     steps.position.set(0, 0.2, baseLength/2 + 1.5);
     steps.receiveShadow = true;
@@ -527,19 +527,16 @@
     driveway.receiveShadow = true;
     blockGroup.add(driveway);
 
-    // Add front grass patch - fixed dimensions
+    // Add front grass patch - fixed orientation to be flat like driveway
     const grassPatch = new THREE.Mesh(
-        new THREE.PlaneGeometry(4, baseWidth),
+        new THREE.PlaneGeometry(baseWidth, 4), // Width and depth like driveway
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
-    grassPatch.rotation.x = -Math.PI / 2;
-
-    // Position grass in front of porch
-    const grassX = x;
+    grassPatch.rotation.x = -Math.PI / 2; // Same as driveway
+    
+    // Position grass in front of porch, keeping house rotation in mind
     const grassZ = isLeftSide ? z + baseLength/2 + 2 : z - baseLength/2 - 2;
-    grassPatch.position.set(grassX, -0.02, grassZ);
-    grassPatch.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
-    grassPatch.receiveShadow = true;
+    grassPatch.position.set(x, -0.02, grassZ);
     blockGroup.add(grassPatch);
     
     // Add mailbox at street edge
