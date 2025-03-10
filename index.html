@@ -511,29 +511,25 @@
             houseGroup.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
             blockGroup.add(houseGroup);
 
-            // Add driveway - perpendicular to street
+            // Add driveway - from side of house to street
             const driveway = new THREE.Mesh(
-                new THREE.PlaneGeometry(8, 3), // Width is distance to street, height is driveway width
+                new THREE.PlaneGeometry(3, 8), // 3 units wide, 8 units long to reach street
                 new THREE.MeshLambertMaterial({ color: 0x999999 })
             );
             driveway.rotation.x = -Math.PI / 2;
             
-            // Position driveway to extend from house to street
-            if (isLeftSide) {
-                driveway.position.set(x - 4, 0, z);
-            } else {
-                driveway.position.set(x + 4, 0, z);
-            }
+            // Position driveway to run from house side to street
+            const driveX = isLeftSide ? 
+                x + (baseWidth/2 + 1.5) : // Left houses - driveway on right side
+                x - (baseWidth/2 + 1.5);  // Right houses - driveway on left side
+            driveway.position.set(driveX, 0, z);
             driveway.receiveShadow = true;
             blockGroup.add(driveway);
             
-            // Add mailbox consistently at street edge
-            const mailboxOffset = 6; // Distance from house center to street
-            if (isLeftSide) {
-                createMailbox(blockGroup, x - mailboxOffset, z);
-            } else {
-                createMailbox(blockGroup, x + mailboxOffset, z);
-            }
+            // Add mailbox at street edge next to driveway
+            const mailboxX = driveX;  // Align with driveway
+            const mailboxZ = z + 3;   // Near street
+            createMailbox(blockGroup, mailboxX, mailboxZ);
             
             // Add collision mesh
             const wallCollision = new THREE.Mesh(
@@ -588,24 +584,24 @@
             rightSidewalk.receiveShadow = true;
             blockGroup.add(rightSidewalk);
             
-            // Create lawns - lowered slightly
-            const leftLawn = new THREE.Mesh(
-                new THREE.PlaneGeometry(11, blockLength),
+            // Create grass lawns between sidewalk and houses
+            const leftGrass = new THREE.Mesh(
+                new THREE.PlaneGeometry(6, blockLength),
                 new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
             );
-            leftLawn.rotation.x = -Math.PI / 2;
-            leftLawn.position.set(-(blockWidth / 2) - 10.5, -0.01, blockLength / 2);
-            leftLawn.receiveShadow = true;
-            blockGroup.add(leftLawn);
+            leftGrass.rotation.x = -Math.PI / 2;
+            leftGrass.position.set(-(blockWidth / 2) - 7, -0.01, blockLength / 2);
+            leftGrass.receiveShadow = true;
+            blockGroup.add(leftGrass);
             
-            const rightLawn = new THREE.Mesh(
-                new THREE.PlaneGeometry(11, blockLength),
+            const rightGrass = new THREE.Mesh(
+                new THREE.PlaneGeometry(6, blockLength),
                 new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
             );
-            rightLawn.rotation.x = -Math.PI / 2;
-            rightLawn.position.set((blockWidth / 2) + 10.5, -0.01, blockLength / 2);
-            rightLawn.receiveShadow = true;
-            blockGroup.add(rightLawn);
+            rightGrass.rotation.x = -Math.PI / 2;
+            rightGrass.position.set((blockWidth / 2) + 7, -0.01, blockLength / 2);
+            rightGrass.receiveShadow = true;
+            blockGroup.add(rightGrass);
             
             // Create houses (4 on each side)
             const houseWidth = 6;
