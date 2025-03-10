@@ -520,6 +520,7 @@
     );
     driveway.rotation.x = -Math.PI / 2;
     
+    // Position driveway to start at garage and extend to street
     const driveX = isLeftSide ? 
         x + baseWidth/2 : // Left houses - driveway starts at right edge
         x - baseWidth/2;  // Right houses - driveway starts at left edge
@@ -527,35 +528,23 @@
     driveway.receiveShadow = true;
     blockGroup.add(driveway);
 
-    // Add front lawn grass (between porch and sidewalk)
-    const frontGrassLength = 6; // Distance from porch to sidewalk
-    const frontGrass = new THREE.Mesh(
-        new THREE.PlaneGeometry(baseWidth, frontGrassLength),
+    // Add grass - simple rectangle between porch and sidewalk
+    const grass = new THREE.Mesh(
+        new THREE.PlaneGeometry(width, 4), // Same width as house, extends to sidewalk
         new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
     );
-    frontGrass.rotation.x = -Math.PI / 2;
-    // Position in front of porch
-    const frontGrassZ = isLeftSide ? z + length/2 + 2 : z - length/2 - 2;
-    frontGrass.position.set(x, -0.02, frontGrassZ);
-    // Rotate to match house orientation
-    frontGrass.rotation.y = isLeftSide ? Math.PI/2 : -Math.PI/2;
-    frontGrass.receiveShadow = true;
-    blockGroup.add(frontGrass);
+    grass.rotation.x = -Math.PI / 2;
 
-    // Add side lawn grass (after driveway)
-    const sideGrassWidth = 4;  // Width of grass patch
-    const sideGrass = new THREE.Mesh(
-        new THREE.PlaneGeometry(sideGrassWidth, baseLength),
-        new THREE.MeshLambertMaterial({ color: COLORS.GRASS })
-    );
-    sideGrass.rotation.x = -Math.PI / 2;
-    // Position on the side after driveway
-    const sideGrassX = isLeftSide ? 
-        x + baseWidth/2 + drivewayWidth + sideGrassWidth/2 : // Left houses
-        x - baseWidth/2 - drivewayWidth - sideGrassWidth/2;  // Right houses
-    sideGrass.position.set(sideGrassX, -0.02, z);
-    sideGrass.receiveShadow = true;
-    blockGroup.add(sideGrass);
+    // Position grass in front of porch, extending to sidewalk
+    if (isLeftSide) {
+        grass.position.set(x, -0.02, z + length/2 + 2);
+        grass.rotation.y = Math.PI/2;
+    } else {
+        grass.position.set(x, -0.02, z - length/2 - 2);
+        grass.rotation.y = -Math.PI/2;
+    }
+    grass.receiveShadow = true;
+    blockGroup.add(grass);
     
     // Add mailbox at street edge next to driveway
     const mailboxX = driveX;  // Align with driveway
